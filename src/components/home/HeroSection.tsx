@@ -3,16 +3,17 @@ import './HeroSection.css';
 
 type Page = 'home' | 'course' | 'glossary';
 
-// CREAM-PIE acronym — from the official docs
+// CREAM-PIE acronym — from docs/CREAM-PIE.md
+// C=Context, R=Rules, E=Engine, A=Application, M=Matrix, P=Polymorphic, I=Injection, E=Execution
 const ACRONYM = [
   { letter: 'C', word: 'Context' },
-  { letter: 'R', word: 'Rules Engine' },
-  { letter: 'E', word: 'App' },
+  { letter: 'R', word: 'Rules' },
+  { letter: 'E', word: 'Engine' },
   { letter: 'A', word: 'Application' },
   { letter: 'M', word: 'Matrix' },
   { letter: 'P', word: 'Polymorphic' },
   { letter: 'I', word: 'Injection' },
-  { letter: 'E', word: '& Execution' },
+  { letter: 'E', word: 'Execution' },
 ];
 
 // ListType values from the official docs (STAGE, TAXONOMY, RELATIONSHIP, EVENT, TRANSFORM)

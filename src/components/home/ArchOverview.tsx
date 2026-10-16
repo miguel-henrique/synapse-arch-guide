@@ -90,13 +90,6 @@ export default function ArchOverview() {
             </div>
           );
         })}
-
-        {/* flow arrows */}
-        <div className="arch-arrows">
-          {LAYERS.slice(0, -1).map((_, i) => (
-            <div key={i} className="arch-arrow">▼</div>
-          ))}
-        </div>
       </div>
 
       {/* the one sentence */}

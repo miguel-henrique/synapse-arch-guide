@@ -1,5 +1,4 @@
 .arch-stack {
-  position: relative;
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
@@ -95,22 +94,7 @@
   line-height: 1.6;
 }
 
-/* flow arrows between layers */
-.arch-arrows {
-  position: absolute;
-  right: -28px;
-  top: 0;
-  height: 100%;
-  display: flex;
-  flex-direction: column;
-  justify-content: space-around;
-  pointer-events: none;
-}
-
-.arch-arrow {
-  color: var(--text-faint);
-  font-size: 0.7rem;
-}
+/* flow connector between layers — rendered as a subtle line between cards */
 
 /* quote */
 .arch-quote {
