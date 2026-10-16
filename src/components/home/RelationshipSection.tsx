@@ -111,8 +111,8 @@ export default function RelationshipSection() {
         </div>
         <p className="prbac-card__desc">
           It's not just <em>who you are</em> — it's <em>who you are to which organization.</em>
-          Brandon might be an Account Manager at CI Web Group but just a Contact at Seattle Web Group.
-          His capabilities differ based on that organizational context, encoded in the JWT at login.
+          A user might be an Account Manager at CI Web Group but just a Contact at another company.
+          Their capabilities differ based on that organizational context, encoded in the JWT at login.
         </p>
         <div className="prbac-formula">
           <div className="prbac-formula__part">

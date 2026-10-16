@@ -121,7 +121,7 @@ export default function CreampieSection() {
         <div className="creampie-analogy__icon">🍰</div>
         <div>
           <p className="creampie-analogy__text">
-            As Chris put it: <em>"Cream Pie translates the ingredients into something edible."</em>
+            <em>"Cream Pie translates the ingredients into something edible."</em>
             The <strong>Lists</strong> are the ingredients (raw vocabulary).
             The <strong>Recipe</strong> is the instructions.
             The <strong>Template Engine</strong> bakes it into a UI surface.

@@ -62,7 +62,7 @@ const TERMS: Term[] = [
     term: 'RELATIONSHIP',
     category: 'ListType',
     color: 'var(--green)',
-    def: 'A ListType for labels on edges between two records. Bidirectional by design: A-of-B implies B-of-A (employee of Chris → Chris is employer of Brandon). The definition table stays authoritative; the List mirrors it. Used in CREAM-PIE recipes to scope data and RBAC by relationship context.',
+    def: 'A ListType for labels on edges between two records. Bidirectional by design: A-of-B implies B-of-A (an employee of an org means that org is an employer). The definition table stays authoritative; the List mirrors it. Used in CREAM-PIE recipes to scope data and RBAC by relationship context.',
     example: 'organizationRelationshipType: customer, vendor, referrer, competitor',
   },
   {
@@ -170,7 +170,7 @@ const TERMS: Term[] = [
     acronym: 'Domain-Specific Language',
     category: 'Concept',
     color: 'var(--text-dim)',
-    def: 'The term Chris was searching for during the meeting to describe what CREAM-PIE + MTEL create: a proprietary language tailored to CI Connect\'s ERP domain. CREAM-PQL is the internal representation; MTEL and JSON are input dialects.',
+    def: 'The term used to describe what CREAM-PIE + MTEL create: a proprietary language tailored to CI Connect\'s ERP domain. CREAM-PQL is the internal representation; MTEL and JSON are input dialects.',
   },
 ];
 
@@ -195,7 +195,7 @@ export default function GlossaryPage() {
         <div className="section__label">Reference</div>
         <h1 className="section__title">Glossary</h1>
         <p className="section__desc">
-          Every term from the architecture, defined. From Chris's meetings, AI discussions, and real code.
+          Every term from the architecture, defined from the official CI Connect documentation.
         </p>
 
         <div className="glossary__controls">

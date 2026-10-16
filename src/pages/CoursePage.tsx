@@ -116,7 +116,7 @@ const LEVELS: Level[] = [
           'Configurable Rendering Engine for APIs, Models, Policies, Integrations & Events',
         ],
         correct: 1,
-        explanation: 'C=Context, R=Rules Engine, E=App, A=Application, M=Matrix, P=Polymorphic, I=Injection, E=Execution. From the official docs: docs/CREAM-PIE.md. Chris worked through this live in the meeting.',
+        explanation: 'C=Context, R=Rules, E=Engine, A=Application, M=Matrix, P=Polymorphic, I=Injection, E=Execution. Defined in docs/CREAM-PIE.md.',
       },
       {
         q: 'A CREAM-PIE Recipe is:',
@@ -181,7 +181,7 @@ const LEVELS: Level[] = [
           'Each tenant runs in a separate Docker container',
         ],
         correct: 2,
-        explanation: 'Chris called it "Community Commerce" or "Social Network ERP." Unlike typical SaaS where Org A\'s data never touches Org B\'s, here a Contact can be shared between orgs, orgs have relationships with other orgs, and data visibility depends on the relationship graph — not just a simple column filter.',
+        explanation: 'This is the multi-tenant design of CI Connect — described in the architecture docs as "Community Commerce." Unlike typical SaaS where Org A\'s data never touches Org B\'s, here a Contact can be shared between orgs, orgs have relationships with other orgs, and data visibility depends on the relationship graph — not just a simple column filter.',
       },
     ],
   },
