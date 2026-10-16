@@ -1,0 +1,256 @@
+.rel-demo {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+  margin-bottom: 2rem;
+}
+
+.rel-demo__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1.25rem 1.5rem;
+  background: rgba(0,0,0,0.15);
+  border-bottom: 1px solid var(--border);
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.rel-demo__contact {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.rel-demo__avatar {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: var(--purple);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 900;
+  font-size: 1.2rem;
+  color: white;
+  flex-shrink: 0;
+}
+
+.rel-demo__name {
+  font-weight: 700;
+  font-size: 1rem;
+  color: var(--text);
+}
+
+.rel-demo__role {
+  font-size: 0.8rem;
+  color: var(--text-faint);
+}
+
+.rel-demo__mrrbox { text-align: right; }
+
+.rel-demo__mrrbox-label {
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-faint);
+  margin-bottom: 0.25rem;
+}
+
+.rel-demo__mrrbox-value {
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: var(--text);
+  transition: color var(--t);
+}
+
+.rel-demo__mrrbox-value span {
+  font-size: 0.85rem;
+  font-weight: 400;
+  color: var(--text-faint);
+}
+
+.rel-demo__mrrbox-breakdown {
+  display: flex;
+  gap: 0.5rem;
+  justify-content: flex-end;
+  font-size: 0.78rem;
+  margin-top: 0.2rem;
+}
+
+.rel-demo__filter {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  padding: 0.75rem 1.5rem;
+  border-bottom: 1px solid var(--border);
+  background: rgba(0,0,0,0.08);
+}
+
+.rel-demo__filter-label {
+  font-size: 0.78rem;
+  color: var(--text-faint);
+  margin-right: 0.25rem;
+  white-space: nowrap;
+}
+
+.rel-filter-btn {
+  padding: 0.3rem 0.75rem;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: none;
+  color: var(--text-dim);
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+  transition: all var(--t);
+}
+
+.rel-filter-btn:hover {
+  border-color: var(--rf-color);
+  color: var(--rf-color);
+}
+
+.rel-filter-btn--active {
+  border-color: var(--rf-color) !important;
+  color: var(--rf-color) !important;
+  background: rgba(255,255,255,0.04) !important;
+}
+
+.rel-graph {
+  padding: 1.25rem 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  min-height: 120px;
+}
+
+.rel-edge {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.rel-edge__label {
+  font-size: 0.72rem;
+  font-weight: 800;
+  font-family: monospace;
+  letter-spacing: 0.06em;
+  width: 90px;
+  flex-shrink: 0;
+}
+
+.rel-edge__line {
+  flex: 0 0 40px;
+  height: 2px;
+  background: var(--rel-color);
+  opacity: 0.4;
+  border-radius: 1px;
+}
+
+.rel-edge__org {
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+}
+
+.rel-edge__org-name {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.rel-edge__org-mrr {
+  font-size: 0.8rem;
+  color: var(--text-faint);
+}
+
+.rel-edge__meaning {
+  font-size: 0.78rem;
+  color: var(--rel-color);
+  font-style: italic;
+  opacity: 0.8;
+}
+
+.rel-empty {
+  color: var(--text-faint);
+  font-size: 0.9rem;
+  text-align: center;
+  padding: 2rem;
+}
+
+/* PRBAC */
+.prbac-card {
+  background: var(--surface);
+  border: 1px solid rgba(124,108,255,0.3);
+  border-radius: var(--radius);
+  padding: 1.5rem;
+}
+
+.prbac-card__title {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--text);
+  margin-bottom: 0.75rem;
+}
+
+.prbac-card__desc {
+  color: var(--text-dim);
+  font-size: 0.9rem;
+  line-height: 1.6;
+  margin-bottom: 1.25rem;
+}
+
+.prbac-formula {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 1rem 1.25rem;
+}
+
+.prbac-formula__part {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  align-items: center;
+}
+
+.prbac-formula__label {
+  font-size: 0.62rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-faint);
+}
+
+.prbac-formula code {
+  font-size: 0.8rem;
+  background: rgba(124,108,255,0.1);
+  border: 1px solid rgba(124,108,255,0.2);
+  color: var(--purple-l);
+  padding: 0.2rem 0.5rem;
+  border-radius: 4px;
+}
+
+.prbac-formula__op {
+  color: var(--text-faint);
+  font-size: 1rem;
+  font-weight: 300;
+}
+
+.prbac-formula__result .prbac-formula__label {
+  font-size: 0.8rem;
+  color: var(--green);
+  font-weight: 900;
+}

@@ -1,0 +1,125 @@
+.code-viewer {
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+  margin-bottom: 2rem;
+}
+
+.code-viewer__tabs {
+  display: flex;
+  overflow-x: auto;
+  border-bottom: 1px solid var(--border);
+  background: rgba(0,0,0,0.2);
+}
+
+.code-viewer__tab {
+  padding: 0.75rem 1rem;
+  border: none;
+  background: none;
+  color: var(--text-faint);
+  font-size: 0.8rem;
+  font-family: monospace;
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  white-space: nowrap;
+  transition: all var(--t);
+}
+
+.code-viewer__tab:hover { color: var(--text-dim); }
+
+.code-viewer__tab--active {
+  color: var(--tab-color) !important;
+  border-bottom-color: var(--tab-color) !important;
+  background: rgba(255,255,255,0.03);
+}
+
+.code-viewer__body { padding: 0; }
+
+.code-viewer__pre {
+  background: none;
+  border: none;
+  border-radius: 0;
+  padding: 1.5rem;
+  font-size: 0.82rem;
+  line-height: 1.65;
+  max-height: 400px;
+  overflow-y: auto;
+  overflow-x: auto;
+  margin: 0;
+}
+
+/* connection flow */
+.connection-flow {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1.5rem;
+}
+
+.connection-flow__title {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--text-dim);
+  margin-bottom: 1.5rem;
+}
+
+.connection-flow__steps {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.connection-flow__node {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  background: var(--bg3);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-left: 3px solid var(--node-color);
+  border-radius: var(--radius-sm);
+  padding: 0.75rem 1.25rem;
+  width: 100%;
+  max-width: 400px;
+}
+
+.connection-flow__node-icon { font-size: 1.1rem; }
+
+.connection-flow__node-label {
+  font-weight: 700;
+  color: var(--node-color);
+  font-size: 0.9rem;
+}
+
+.connection-flow__node-detail {
+  font-size: 0.8rem;
+  color: var(--text-faint);
+  font-family: monospace;
+}
+
+.connection-flow__arrow {
+  color: var(--text-faint);
+  font-size: 1.2rem;
+}
+
+.connection-flow__consumers {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  justify-content: center;
+  margin-top: 0.5rem;
+  max-width: 500px;
+}
+
+.connection-flow__consumer {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 0.3rem 0.8rem;
+  font-size: 0.8rem;
+  color: var(--text-dim);
+}

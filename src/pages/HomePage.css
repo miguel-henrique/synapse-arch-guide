@@ -1,0 +1,95 @@
+/* Hero lives outside the constrained wrapper — full bleed */
+.home__hero-wrapper {
+  width: 100%;
+}
+
+/* All other sections get the constrained wrapper */
+.home__content {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 1.5rem 6rem;
+}
+
+/* ── shared section styles ── */
+.section {
+  padding: 5rem 0;
+  border-bottom: 1px solid var(--border);
+}
+.section:last-child { border-bottom: none; }
+
+.section__label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--purple-l);
+  margin-bottom: 1rem;
+}
+
+.section__label::before {
+  content: '';
+  width: 20px;
+  height: 2px;
+  background: var(--purple);
+  border-radius: 1px;
+}
+
+.section__title {
+  font-size: clamp(1.75rem, 3vw, 2.5rem);
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  line-height: 1.2;
+  margin-bottom: 1rem;
+}
+
+.section__desc {
+  color: var(--text-dim);
+  font-size: 1.05rem;
+  line-height: 1.7;
+  max-width: 640px;
+  margin-bottom: 3rem;
+}
+
+/* ── cards ── */
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1.5rem;
+  transition: border-color var(--t), transform var(--t);
+}
+.card:hover {
+  border-color: var(--border2);
+  transform: translateY(-2px);
+}
+
+/* ── grid layouts ── */
+.grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; }
+.grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1.5rem; }
+
+@media (max-width: 768px) {
+  .grid-2, .grid-3 { grid-template-columns: 1fr; }
+}
+
+/* ── badge/tag ── */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.2em 0.65em;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+.badge--purple { background: rgba(124,108,255,0.15); color: var(--purple-l); border: 1px solid rgba(124,108,255,0.3); }
+.badge--teal   { background: rgba(0,212,170,0.12);   color: var(--teal-l);   border: 1px solid rgba(0,212,170,0.25); }
+.badge--orange { background: rgba(255,124,58,0.12);  color: var(--orange-l); border: 1px solid rgba(255,124,58,0.25); }
+.badge--pink   { background: rgba(255,79,170,0.12);  color: var(--pink);     border: 1px solid rgba(255,79,170,0.25); }
+.badge--blue   { background: rgba(58,159,255,0.12);  color: var(--blue);     border: 1px solid rgba(58,159,255,0.25); }
+.badge--green  { background: rgba(58,255,140,0.12);  color: var(--green);    border: 1px solid rgba(58,255,140,0.25); }
+.badge--yellow { background: rgba(255,224,58,0.12);  color: var(--yellow);   border: 1px solid rgba(255,224,58,0.25); }
