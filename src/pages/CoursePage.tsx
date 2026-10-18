@@ -451,6 +451,18 @@ function SortActivity({ activity, onComplete }: {
     setOver(null);
   }
 
+  // Tap-to-place (touch / mobile where HTML5 drag-and-drop doesn't fire)
+  function selectItem(itemId: string) {
+    setDragging(prev => (prev === itemId ? null : itemId));
+  }
+
+  function placeSelected(bucketId: string) {
+    if (!dragging) return;
+    setPlacements(p => ({ ...p, [dragging]: bucketId }));
+    setDragging(null);
+    setOver(null);
+  }
+
   function clickPlace(itemId: string, bucketId: string) {
     setPlacements(p => {
       if (p[itemId] === bucketId) {
@@ -471,10 +483,11 @@ function SortActivity({ activity, onComplete }: {
         {activity.items.filter(i => !placements[i.id]).map(item => (
           <div
             key={item.id}
-            className={`sort-item ${dragging === item.id ? 'sort-item--dragging' : ''}`}
+            className={`sort-item ${dragging === item.id ? 'sort-item--dragging sort-item--selected' : ''}`}
             draggable
             onDragStart={() => setDragging(item.id)}
             onDragEnd={() => setDragging(null)}
+            onClick={() => selectItem(item.id)}
           >
             <code>{item.label}</code>
           </div>
@@ -489,11 +502,12 @@ function SortActivity({ activity, onComplete }: {
         {activity.buckets.map(bucket => (
           <div
             key={bucket.id}
-            className={`sort-bucket ${over === bucket.id ? 'sort-bucket--over' : ''}`}
+            className={`sort-bucket ${over === bucket.id ? 'sort-bucket--over' : ''} ${dragging ? 'sort-bucket--target' : ''}`}
             style={{ '--bucket-color': bucket.color } as React.CSSProperties}
             onDragOver={e => { e.preventDefault(); setOver(bucket.id); }}
             onDragLeave={() => setOver(null)}
             onDrop={() => drop(bucket.id)}
+            onClick={() => placeSelected(bucket.id)}
           >
             <div className="sort-bucket__header">{bucket.label}</div>
             <div className="sort-bucket__items">
@@ -503,7 +517,7 @@ function SortActivity({ activity, onComplete }: {
                   <div
                     key={item.id}
                     className={`sort-item sort-item--placed ${checked ? (correct ? 'sort-item--correct' : 'sort-item--wrong') : ''}`}
-                    onClick={() => !checked && clickPlace(item.id, bucket.id)}
+                    onClick={e => { e.stopPropagation(); if (!checked) clickPlace(item.id, bucket.id); }}
                   >
                     <code>{item.label}</code>
                     {checked && <span className="sort-item__badge">{correct ? '✓' : '✗'}</span>}
@@ -518,7 +532,7 @@ function SortActivity({ activity, onComplete }: {
         ))}
       </div>
 
-      <p className="activity__hint">Drag items to a bucket, or click an item to move it back to the pool.</p>
+      <p className="activity__hint">Tap an item to select it, then tap a bucket to place it. On desktop you can also drag. Tap a placed item to send it back to the pool.</p>
 
       {!checked ? (
         <button

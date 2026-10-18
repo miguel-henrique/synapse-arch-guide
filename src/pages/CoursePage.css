@@ -192,6 +192,10 @@
 }
 .sort-item:hover { border-color: var(--purple); }
 .sort-item--dragging { opacity: 0.4; }
+.sort-item--selected {
+  opacity: 1; border-color: var(--purple);
+  box-shadow: 0 0 0 2px var(--purple);
+}
 .sort-item--placed { cursor: pointer; }
 .sort-item--correct { border-color: var(--green) !important; background: rgba(58,255,140,0.08) !important; }
 .sort-item--wrong { border-color: var(--pink) !important; background: rgba(255,79,170,0.08) !important; }
@@ -205,6 +209,8 @@
   transition: background var(--t);
 }
 .sort-bucket--over { background: rgba(255,255,255,0.04); }
+.sort-bucket--target { cursor: pointer; border-style: solid; }
+.sort-bucket--target:hover { background: rgba(255,255,255,0.04); }
 .sort-bucket__header {
   font-size: 0.8rem; font-weight: 700; color: var(--bucket-color);
   margin-bottom: 0.6rem; padding-bottom: 0.5rem;
