@@ -103,12 +103,19 @@
   position: fixed;
   inset: 0;
   background: rgba(0,0,0,0.6);
-  opacity: 0;
-  pointer-events: none;
-  transition: opacity var(--t);
   z-index: 110;
+  animation: nav-fade-in 0.2s ease both;
 }
 .nav__backdrop--open { opacity: 1; pointer-events: auto; }
+
+@keyframes nav-fade-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+@keyframes nav-slide-in {
+  from { transform: translateX(100%); }
+  to   { transform: translateX(0); }
+}
 
 .nav__drawer {
   position: fixed;
@@ -116,16 +123,17 @@
   right: 0;
   bottom: 0;
   width: min(80vw, 300px);
-  background: var(--bg2);
+  max-width: 300px;
+  background: #111118;
+  background: var(--bg2, #111118);
   border-left: 1px solid var(--border);
-  box-shadow: -8px 0 40px rgba(0,0,0,0.5);
-  transform: translateX(100%);
-  transition: transform 0.25s ease;
+  box-shadow: -8px 0 40px rgba(0,0,0,0.6);
   z-index: 120;
   display: flex;
   flex-direction: column;
+  animation: nav-slide-in 0.25s ease both;
+  will-change: transform;
 }
-.nav__drawer--open { transform: translateX(0); }
 
 .nav__drawer-head {
   display: flex;

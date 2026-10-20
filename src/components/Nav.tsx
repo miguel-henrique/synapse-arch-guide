@@ -63,34 +63,35 @@ export default function Nav({ page, setPage }: Props) {
         </button>
       </div>
 
-      {/* Off-canvas drawer (right side) */}
-      <div
-        className={`nav__backdrop ${menuOpen ? 'nav__backdrop--open' : ''}`}
-        onClick={() => setMenuOpen(false)}
-      />
-      <aside className={`nav__drawer ${menuOpen ? 'nav__drawer--open' : ''}`}>
-        <div className="nav__drawer-head">
-          <span className="nav__drawer-title">Menu</span>
-          <button
-            className="nav__drawer-close"
-            aria-label="Close menu"
-            onClick={() => setMenuOpen(false)}
-          >
-            ✕
-          </button>
-        </div>
-        <div className="nav__drawer-links">
-          {LINKS.map(l => (
-            <button
-              key={l.page}
-              className={`nav__drawer-link ${page === l.page ? 'nav__drawer-link--active' : ''}`}
-              onClick={() => go(l.page)}
-            >
-              {l.label}
-            </button>
-          ))}
-        </div>
-      </aside>
+      {/* Off-canvas drawer (right side) — only in DOM when open */}
+      {menuOpen && (
+        <>
+          <div className="nav__backdrop nav__backdrop--open" onClick={() => setMenuOpen(false)} />
+          <aside className="nav__drawer nav__drawer--open">
+            <div className="nav__drawer-head">
+              <span className="nav__drawer-title">Menu</span>
+              <button
+                className="nav__drawer-close"
+                aria-label="Close menu"
+                onClick={() => setMenuOpen(false)}
+              >
+                ✕
+              </button>
+            </div>
+            <div className="nav__drawer-links">
+              {LINKS.map(l => (
+                <button
+                  key={l.page}
+                  className={`nav__drawer-link ${page === l.page ? 'nav__drawer-link--active' : ''}`}
+                  onClick={() => go(l.page)}
+                >
+                  {l.label}
+                </button>
+              ))}
+            </div>
+          </aside>
+        </>
+      )}
     </nav>
   );
 }
