@@ -2,6 +2,7 @@ import { useMemo, useState, useEffect, useRef } from 'react';
 import { DOCS } from '../data/docs';
 import type { Doc } from '../data/docs';
 import { Markdown } from '../components/Markdown';
+import { useReadingProgress } from '../hooks/useReadingProgress';
 import './DocumentationPage.css';
 
 export default function DocumentationPage() {
@@ -9,6 +10,10 @@ export default function DocumentationPage() {
   const [search, setSearch] = useState('');
   const [navOpen, setNavOpen] = useState(false);
   const contentRef = useRef<HTMLDivElement>(null);
+  const { isRead, toggle, reset, count } = useReadingProgress();
+
+  const total = DOCS.length;
+  const pct = Math.round((count / total) * 100);
 
   const activeDoc: Doc = useMemo(
     () => DOCS.find(d => d.id === activeDocId) ?? DOCS[0],
@@ -84,13 +89,35 @@ export default function DocumentationPage() {
               />
             </div>
 
+            {/* Reading progress */}
+            <div className="docs__progress">
+              <div className="docs__progress-top">
+                <span className="docs__progress-label">Reading progress</span>
+                <span className="docs__progress-count">
+                  {count}/{total}
+                </span>
+              </div>
+              <div className="docs__progress-track">
+                <div className="docs__progress-fill" style={{ width: `${pct}%` }} />
+              </div>
+              <div className="docs__progress-bottom">
+                <span className="docs__progress-pct">{pct}% complete</span>
+                {count > 0 && (
+                  <button className="docs__progress-reset" onClick={reset}>
+                    Reset
+                  </button>
+                )}
+              </div>
+            </div>
+
             <nav className="docs__nav">
               {DOCS.map((doc, i) => {
                 const isActive = doc.id === activeDocId && !search;
+                const done = isRead(doc.id);
                 return (
                   <div key={doc.id} className="docs__nav-group">
                     <button
-                      className={`docs__nav-doc ${isActive ? 'docs__nav-doc--active' : ''}`}
+                      className={`docs__nav-doc ${isActive ? 'docs__nav-doc--active' : ''} ${done ? 'docs__nav-doc--done' : ''}`}
                       style={{ '--doc-color': doc.color } as React.CSSProperties}
                       onClick={() => {
                         setActiveDocId(doc.id);
@@ -98,7 +125,9 @@ export default function DocumentationPage() {
                         setNavOpen(false);
                       }}
                     >
-                      <span className="docs__nav-num">{String(i + 1).padStart(2, '0')}</span>
+                      <span className="docs__nav-check" aria-hidden="true">
+                        {done ? '✓' : String(i + 1).padStart(2, '0')}
+                      </span>
                       <span className="docs__nav-icon">{doc.icon}</span>
                       <span className="docs__nav-doc-title">{doc.short}</span>
                     </button>
@@ -142,6 +171,14 @@ export default function DocumentationPage() {
                 </div>
                 <h1 className="docs__article-title">{activeDoc.title}</h1>
                 <p className="docs__article-summary">{activeDoc.summary}</p>
+
+                <button
+                  className={`docs__read-toggle ${isRead(activeDoc.id) ? 'docs__read-toggle--done' : ''}`}
+                  onClick={() => toggle(activeDoc.id)}
+                >
+                  <span className="docs__read-toggle-box">{isRead(activeDoc.id) ? '✓' : ''}</span>
+                  {isRead(activeDoc.id) ? 'Marked as read' : 'Mark as read'}
+                </button>
               </header>
 
               {activeDoc.sections.map(sec => (
@@ -158,7 +195,15 @@ export default function DocumentationPage() {
                 </section>
               ))}
 
-              <DocFooter activeDoc={activeDoc} onNav={setActiveDocId} />
+              <DocFooter
+                activeDoc={activeDoc}
+                onNav={setActiveDocId}
+                onMarkAndNext={(nextId: string) => {
+                  toggle(activeDoc.id);
+                  if (!isRead(activeDoc.id)) setActiveDocId(nextId);
+                }}
+                isDone={isRead(activeDoc.id)}
+              />
             </article>
           )}
         </main>
@@ -209,39 +254,72 @@ function SearchResults({
   );
 }
 
-function DocFooter({ activeDoc, onNav }: { activeDoc: Doc; onNav: (id: string) => void }) {
+function DocFooter({
+  activeDoc,
+  onNav,
+  onMarkAndNext,
+  isDone,
+}: {
+  activeDoc: Doc;
+  onNav: (id: string) => void;
+  onMarkAndNext: (nextId: string) => void;
+  isDone: boolean;
+}) {
   const idx = DOCS.findIndex(d => d.id === activeDoc.id);
   const prev = idx > 0 ? DOCS[idx - 1] : null;
   const next = idx < DOCS.length - 1 ? DOCS[idx + 1] : null;
 
   return (
-    <nav className="docs__footer">
-      {prev ? (
-        <button
-          className="docs__footer-btn docs__footer-btn--prev"
-          onClick={() => onNav(prev.id)}
-        >
-          <span className="docs__footer-dir">← Previous</span>
-          <span className="docs__footer-title">
-            {prev.icon} {prev.title}
-          </span>
-        </button>
-      ) : (
-        <span />
-      )}
-      {next ? (
-        <button
-          className="docs__footer-btn docs__footer-btn--next"
-          onClick={() => onNav(next.id)}
-        >
-          <span className="docs__footer-dir">Next →</span>
-          <span className="docs__footer-title">
-            {next.icon} {next.title}
-          </span>
-        </button>
-      ) : (
-        <span />
-      )}
-    </nav>
+    <>
+      {/* Mark-read call to action */}
+      <div className="docs__cta">
+        {!isDone ? (
+          <button
+            className="docs__cta-btn"
+            onClick={() => (next ? onMarkAndNext(next.id) : onMarkAndNext(activeDoc.id))}
+          >
+            ✓ Mark as read{next ? ' & continue' : ''}
+          </button>
+        ) : (
+          <div className="docs__cta-done">
+            ✓ You've read this document
+            {next && (
+              <button className="docs__cta-link" onClick={() => onNav(next.id)}>
+                Continue to {next.short} →
+              </button>
+            )}
+          </div>
+        )}
+      </div>
+
+      <nav className="docs__footer">
+        {prev ? (
+          <button
+            className="docs__footer-btn docs__footer-btn--prev"
+            onClick={() => onNav(prev.id)}
+          >
+            <span className="docs__footer-dir">← Previous</span>
+            <span className="docs__footer-title">
+              {prev.icon} {prev.title}
+            </span>
+          </button>
+        ) : (
+          <span />
+        )}
+        {next ? (
+          <button
+            className="docs__footer-btn docs__footer-btn--next"
+            onClick={() => onNav(next.id)}
+          >
+            <span className="docs__footer-dir">Next →</span>
+            <span className="docs__footer-title">
+              {next.icon} {next.title}
+            </span>
+          </button>
+        ) : (
+          <span />
+        )}
+      </nav>
+    </>
   );
 }
