@@ -7,7 +7,7 @@ import RelationshipSection from '../components/home/RelationshipSection';
 import RenderingSection from '../components/home/RenderingSection';
 import RealCodeSection from '../components/home/RealCodeSection';
 
-type Page = 'home' | 'course' | 'glossary';
+type Page = 'home' | 'course' | 'glossary' | 'docs';
 
 interface Props { setPage: (p: Page) => void; }
 

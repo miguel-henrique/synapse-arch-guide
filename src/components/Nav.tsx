@@ -1,6 +1,6 @@
 import './Nav.css';
 
-type Page = 'home' | 'course' | 'glossary';
+type Page = 'home' | 'course' | 'glossary' | 'docs';
 
 interface Props {
   page: Page;
@@ -22,6 +22,9 @@ export default function Nav({ page, setPage }: Props) {
           </NavLink>
           <NavLink active={page === 'course'}   onClick={() => setPage('course')}>
             Course
+          </NavLink>
+          <NavLink active={page === 'docs'}     onClick={() => setPage('docs')}>
+            Documentation
           </NavLink>
           <NavLink active={page === 'glossary'} onClick={() => setPage('glossary')}>
             Glossary

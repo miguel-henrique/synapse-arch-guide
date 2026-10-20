@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import './HeroSection.css';
 
-type Page = 'home' | 'course' | 'glossary';
+type Page = 'home' | 'course' | 'glossary' | 'docs';
 
 // CREAM-PIE acronym — from docs/CREAM-PIE.md
 // C=Context, R=Rules, E=Engine, A=Application, M=Matrix, P=Polymorphic, I=Injection, E=Execution

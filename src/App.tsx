@@ -4,8 +4,9 @@ import Nav from './components/Nav';
 import HomePage from './pages/HomePage';
 import CoursePage from './pages/CoursePage';
 import GlossaryPage from './pages/GlossaryPage';
+import DocumentationPage from './pages/DocumentationPage';
 
-type Page = 'home' | 'course' | 'glossary';
+type Page = 'home' | 'course' | 'glossary' | 'docs';
 
 const SESSION_KEY = 'sag_auth';
 const CORRECT_PASSWORD = 'creampie';
@@ -35,6 +36,7 @@ export default function App() {
       <main>
         {page === 'home'     && <HomePage     setPage={setPage} />}
         {page === 'course'   && <CoursePage />}
+        {page === 'docs'     && <DocumentationPage />}
         {page === 'glossary' && <GlossaryPage />}
       </main>
     </>
