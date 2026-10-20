@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import './Nav.css';
 
 type Page = 'home' | 'course' | 'glossary' | 'docs';
@@ -63,35 +64,38 @@ export default function Nav({ page, setPage }: Props) {
         </button>
       </div>
 
-      {/* Off-canvas drawer (right side) — only in DOM when open */}
-      {menuOpen && (
-        <>
-          <div className="nav__backdrop nav__backdrop--open" onClick={() => setMenuOpen(false)} />
-          <aside className="nav__drawer nav__drawer--open">
-            <div className="nav__drawer-head">
-              <span className="nav__drawer-title">Menu</span>
-              <button
-                className="nav__drawer-close"
-                aria-label="Close menu"
-                onClick={() => setMenuOpen(false)}
-              >
-                ✕
-              </button>
-            </div>
-            <div className="nav__drawer-links">
-              {LINKS.map(l => (
+      {/* Off-canvas drawer — portaled to body so it escapes the nav's
+          backdrop-filter stacking context (which made it look transparent) */}
+      {menuOpen &&
+        createPortal(
+          <>
+            <div className="nav__backdrop nav__backdrop--open" onClick={() => setMenuOpen(false)} />
+            <aside className="nav__drawer nav__drawer--open">
+              <div className="nav__drawer-head">
+                <span className="nav__drawer-title">Menu</span>
                 <button
-                  key={l.page}
-                  className={`nav__drawer-link ${page === l.page ? 'nav__drawer-link--active' : ''}`}
-                  onClick={() => go(l.page)}
+                  className="nav__drawer-close"
+                  aria-label="Close menu"
+                  onClick={() => setMenuOpen(false)}
                 >
-                  {l.label}
+                  ✕
                 </button>
-              ))}
-            </div>
-          </aside>
-        </>
-      )}
+              </div>
+              <div className="nav__drawer-links">
+                {LINKS.map(l => (
+                  <button
+                    key={l.page}
+                    className={`nav__drawer-link ${page === l.page ? 'nav__drawer-link--active' : ''}`}
+                    onClick={() => go(l.page)}
+                  >
+                    {l.label}
+                  </button>
+                ))}
+              </div>
+            </aside>
+          </>,
+          document.body,
+        )}
     </nav>
   );
 }
