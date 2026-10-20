@@ -423,6 +423,88 @@ const LEVELS: Level[] = [
       },
     ],
   },
+
+  // ── LEVEL 6 ──────────────────────────────────────────────────────────────
+  {
+    id: 6,
+    title: 'Deciding How to Build',
+    subtitle: 'UI-vs-code triage, and "declare the relation, don\'t write a resolver"',
+    icon: '🧭',
+    color: 'var(--pink)',
+    intro: {
+      headline: 'The first question is never "what code do I write?"',
+      body: [
+        'Every request starts with one triage: is this a DATA change (done in the Lists admin UI, no code, no deploy) or a CODE change? Guessing "write some code" first is how the engine gets bypassed and bespoke one-offs pile up.',
+        'DATA change — do it in the Lists admin at /backoffice/admin/lists, nothing else. New status, new type, new tag, a renamed or recolored value, a new saved perspective: these are ListItems or recipe rows. "Add list values via the admin UI, not migrations." No PR. If the whole request is "add/rename/reorder a value," you are done without touching the repo.',
+        'CODE change — only when rows genuinely cannot express it: a new relation between two tables, a new module model, a new recipe wired into a module manifest, or real new behavior. Before writing anything, name the List, ListItem, recipe row, OR relation that is missing. If it can be rows, it is rows.',
+        'The trap: a "new filter" can be EITHER. A filter over existing vocabulary values is data (a chip/recipe). A filter that has to reach across a relationship that is not yet navigable is a missing RELATION — you declare the relation in the schema, and the one condition dialect (CREAM-PQL) traverses it. You do NOT write a hand-rolled resolver that side-queries and builds a custom WHERE — that is the §3 violation (an ad-hoc filter DSL beside the engine).',
+        'Worked example — the campaign filter bug. "Leads I attached to an event don\'t show when I filter Leads by that campaign." A lead links to a campaign two ways: a stamp on the lead (Lead.campaignId) and a membership row (CampaignMember). The filter only read the stamp. The WRONG fix (shipped first) was a bespoke campaignMembershipFilter.ts that side-queried CampaignMember and built an OR() — new filter code, a §3 violation. The RIGHT fix: the edge already exists as rows; what was missing was a declared Prisma RELATION (Lead.campaignMembers ↔ CampaignMember.lead). Declare it, and the stock compiler resolves when[campaignMembers.campaignId][eq]=8 with zero filter code. Delete the resolver.',
+      ],
+      highlight: 'Triage first: data (Lists admin, no code) vs code (a missing relation / model / recipe). "Admin UI not migrations" is about vocabulary VALUES. A missing relationship is schema — declare it, let CREAM-PQL traverse it, never hand-roll a resolver.',
+    },
+    activity: {
+      kind: 'sort',
+      prompt: 'Sort each request into: "Lists admin UI (data, no code)" vs "Code change (relation / model / recipe)"',
+      buckets: [
+        { id: 'ui', label: '🖥️ Lists admin UI — no code', color: 'var(--blue)' },
+        { id: 'code', label: '💻 Code change', color: 'var(--orange-l)' },
+      ],
+      items: [
+        { id: 'a', label: 'Add a "Churned" value to customer status', bucket: 'ui' },
+        { id: 'b', label: 'Add a new campaign-member role "sponsor"', bucket: 'ui' },
+        { id: 'c', label: 'Make the Leads filter match leads linked to a campaign by membership', bucket: 'code' },
+        { id: 'd', label: 'Rename the "At Risk" label to "Needs Attention"', bucket: 'ui' },
+        { id: 'e', label: 'Add a saved "Hot HVAC leads" perspective for yourself', bucket: 'ui' },
+        { id: 'f', label: 'Let leads relate to Distributors (a link that does not exist yet)', bucket: 'code' },
+      ],
+    },
+    questions: [
+      {
+        q: 'A request says "add a Vendor option to the Lead Type dropdown." What is the correct first move?',
+        options: [
+          'Write a migration adding a new enum value',
+          'Add the ListItem in the Lists admin UI — it\'s a vocabulary value, no code',
+          'Create a new LeadType Prisma model',
+          'Write a CREAM-PIE resolver for the Vendor case',
+        ],
+        correct: 1,
+        explanation: 'A new value of an existing vocabulary is a ListItem, added in /backoffice/admin/lists. "Add list values via the admin UI, not migrations." No code, no deploy.',
+      },
+      {
+        q: 'The docs say "add list values via the admin UI, not migrations." What does this rule govern?',
+        options: [
+          'All schema changes, including relations and new tables',
+          'Only the VALUES inside a List (statuses, types, tags, roles) — not relations or new behavior',
+          'Only changes made by non-developers',
+          'Every filter, because all filters are data',
+        ],
+        correct: 1,
+        explanation: 'It is specifically about vocabulary VALUES — ListItems. A missing RELATION between two tables, a new model, or genuinely new behavior is a code/schema change. Don\'t stretch the "admin UI" rule to cover a missing relationship.',
+      },
+      {
+        q: 'A lead links to a campaign via a CampaignMember row, but the filter only reads Lead.campaignId. The membership-linked leads don\'t show. What is the doctrine-compliant fix?',
+        options: [
+          'Write a resolver that side-queries CampaignMember and builds an OR() where',
+          'Add a new enum for campaign membership',
+          'Declare the Prisma relation (Lead.campaignMembers ↔ CampaignMember.lead) and let CREAM-PQL traverse it — no filter code',
+          'Copy Lead.campaignId onto every CampaignMember row with a backfill',
+        ],
+        correct: 2,
+        explanation: 'The edge already exists as rows; the missing thing is a declared relation. With it, the stock compiler resolves when[campaignMembers.campaignId][eq]=8 natively. A hand-rolled resolver is an ad-hoc filter DSL beside the engine — the §3 violation this course exists to prevent.',
+      },
+      {
+        q: 'Before writing ANY code for a request, what must you name first?',
+        options: [
+          'The React component and its props',
+          'The database table and its columns',
+          'The List, ListItem, recipe row, or relation that is missing — "if it can be rows, it is rows"',
+          'The API endpoint and its route',
+        ],
+        correct: 2,
+        explanation: 'The governing rule: name the missing List / ListItem / recipe / relation first. If the need can be expressed as rows (a value, a saved view) or a declared relation, that is the answer — not new bespoke code.',
+      },
+    ],
+  },
 ];
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -1020,7 +1102,7 @@ export default function CoursePage() {
         <div className="section__label">Learning Mode</div>
         <h1 className="section__title">Synapse Architecture Course</h1>
         <p className="section__desc">
-          5 levels. Each one has an introduction, a hands-on activity, and a knowledge check.
+          6 levels. Each one has an introduction, a hands-on activity, and a knowledge check.
           Complete 67%+ of the quiz to pass a level. Progress is saved in this session.
         </p>
         <div className="course__progress-bar-container">
