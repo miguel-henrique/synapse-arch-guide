@@ -15,11 +15,52 @@ interface Question {
   explanation: string;
 }
 
+// A cross-disciplinary concept callout: connects the Synapse pattern to an
+// established idea in CS / databases / data structures / software engineering.
+interface Concept {
+  icon: string;
+  discipline: string;      // e.g. "Databases", "Data Structures", "Programming"
+  term: string;            // the established name, e.g. "Graph database"
+  body: string;            // how the Synapse pattern maps to it
+}
+
+// Which source documents back this level (shown as a "documented in" block).
+interface DocRef {
+  file: string;            // repo path, e.g. "docs/architecture/DOCTRINE.md"
+  note: string;            // what to read there
+}
+
 type ActivityType =
   | { kind: 'sort'; prompt: string; items: { id: string; label: string; bucket: string }[]; buckets: { id: string; label: string; color: string }[] }
   | { kind: 'match'; prompt: string; pairs: { term: string; def: string }[] }
   | { kind: 'build'; prompt: string; slots: { id: string; label: string; options: string[]; correct: string }[] }
-  | { kind: 'trace'; prompt: string; steps: { id: string; label: string; detail: string; color: string }[] };
+  | { kind: 'trace'; prompt: string; steps: { id: string; label: string; detail: string; color: string }[] }
+  // Interactive relationship-graph explorer — click a node, see its typed edges.
+  | {
+      kind: 'graph';
+      prompt: string;
+      nodes: { id: string; label: string; type: string; color: string; mrr?: number }[];
+      edges: { from: string; to: string; label: string; perspective: string }[];
+      focusHint: string;
+    }
+  // CREAM-PQL query builder — assemble a ?when[...] URL and see the compiled where.
+  | {
+      kind: 'query';
+      prompt: string;
+      resource: string;
+      fields: { key: string; label: string; ops: string[]; values: { value: string; label: string }[] }[];
+      goalText: string;
+      goal: { field: string; op: string; value: string }[];
+    }
+  // Synapse UI simulation — a live EntityList the learner filters, with tabs/chips.
+  | {
+      kind: 'uimock';
+      prompt: string;
+      resource: string;
+      stageList: { key: string; label: string; color: string }[];
+      rows: { id: number; name: string; stage: string; meta: string }[];
+      lessonText: string;
+    };
 
 interface Level {
   id: number;
@@ -32,6 +73,8 @@ interface Level {
     body: string[];
     highlight: string;
   };
+  concepts?: Concept[];
+  docRefs?: DocRef[];
   activity: ActivityType;
   questions: Question[];
 }
@@ -54,6 +97,30 @@ const LEVELS: Level[] = [
       ],
       highlight: 'One List in the database. Zero private copies. Every consumer reads from the same source.',
     },
+    concepts: [
+      {
+        icon: '🔁',
+        discipline: 'Software Engineering',
+        term: 'DRY — Don\'t Repeat Yourself',
+        body: 'Coined in The Pragmatic Programmer: "every piece of knowledge must have a single, unambiguous, authoritative representation within a system." The 78 copies are 78 representations of one piece of knowledge. Collapsing them to one List is DRY applied to data, not just code.',
+      },
+      {
+        icon: '🎯',
+        discipline: 'Software Design',
+        term: 'Single Source of Truth (SSOT)',
+        body: 'The List row is the SSOT for a vocabulary. Every other layer — UI, query, RBAC — holds a reference to it, never a copy. When the truth changes, every reference sees the change at once. No synchronisation step, so nothing can fall out of sync.',
+      },
+      {
+        icon: '🛠️',
+        discipline: 'Build / CI',
+        term: 'Ratchet (one-way constraint)',
+        body: 'The "anatomy ratchet" is a CI guard that only lets the count of hardcoded copies go down, never up. Like a socket-wrench ratchet, progress is locked in. This is a common technique for paying down tech debt without regressing — the number can only improve.',
+      },
+    ],
+    docRefs: [
+      { file: 'docs/architecture/DOCTRINE.md', note: '§1 — the "never hardcode a business vocabulary" rule and the One Vocabulary Layer.' },
+      { file: 'docs/architecture/ERP-PRIMITIVES.md', note: 'Why this is Reference Data Management, not a bag of enums.' },
+    ],
     activity: {
       kind: 'sort',
       prompt: 'Sort these into: "Hardcoded copy (drift risk)" vs "Reads from the List (DRY)"',
@@ -126,6 +193,37 @@ const LEVELS: Level[] = [
       ],
       highlight: 'STAGE governs transitions. TAXONOMY classifies freely. RELATIONSHIP labels edges. EVENT labels occurrences. TRANSFORM shapes responses.',
     },
+    concepts: [
+      {
+        icon: '🔤',
+        discipline: 'Programming Languages',
+        term: 'Primitive types',
+        body: 'A language gives you a small set of primitives — number, string, boolean — and you compose them to express anything. A List is a primitive of the ERP\'s vocabulary language: pick a ListType the way you pick a type, and you express a status, a classification, an edge label, or an occurrence. The five ListTypes are the "type system" for business meaning.',
+      },
+      {
+        icon: '🗃️',
+        discipline: 'Databases',
+        term: 'EAV & the WordPress taxonomy shape',
+        body: 'List / ListItem / ListResource is the Entity-Attribute-Value pattern done deliberately: List ≈ wp_term_taxonomy, ListItem ≈ wp_terms, ListResource ≈ wp_term_relationships, and ItemMeta ≈ wp_termmeta. It is schemaless vocabulary on top of a relational database — new values need no migration, exactly like adding a WordPress tag.',
+      },
+      {
+        icon: '🔑',
+        discipline: 'Software Design',
+        term: 'Stable identifier vs display label',
+        body: 'The immutable slug is the machine identifier (like a primary key or an enum constant\'s name); the label is the human display string. This is the same separation as a database key vs a column value, or an i18n message-id vs its translation. Rename the label freely; the slug is API and renaming it is a data migration.',
+      },
+      {
+        icon: '🌲',
+        discipline: 'Data Structures',
+        term: 'Recursive / self-referential structure',
+        body: 'A ListItem can carry its own sub-List (the "Waiting on Client" stage has a holdReason sub-list). That is a tree/one-level recursion — a dependent picklist (Salesforce\'s name) or skos:narrower (the SKOS standard). The depth is bounded at one: a meta value may point to a List, but nothing attaches to a meta.',
+      },
+    ],
+    docRefs: [
+      { file: 'docs/architecture/ERP-PRIMITIVES.md', note: '§1 the SKOS/RDF names; §2 why type is three orthogonal axes; §3 ListType-as-a-List.' },
+      { file: 'docs/architecture/SEEDED-LISTS.md', note: 'The full catalogue of 98 seeded lists, and the §4.2 dependent sub-list example.' },
+      { file: 'docs/api/polymorphic-lists.md', note: 'The List/ListResource models and "add values via admin UI, not migrations."' },
+    ],
     activity: {
       kind: 'match',
       prompt: 'Match each List to its correct ListType',
@@ -204,6 +302,37 @@ const LEVELS: Level[] = [
       ],
       highlight: '"Cream Pie translates the ingredients into something edible." Lists are the ingredients. The Recipe is the instructions. The Template Engine bakes it.',
     },
+    concepts: [
+      {
+        icon: '🧾',
+        discipline: 'Programming Languages',
+        term: 'DSL + compiler (one IR, many front-ends)',
+        body: 'MTEL and JSON are two front-end syntaxes; both compile to CREAM-PQL, the single internal representation (IR), just as C and Rust both lower to LLVM IR. A recipe\'s { logic, rules } tree is an AST; compilePredicate / toPrismaWhere are the back-ends that target an in-memory predicate or a SQL WHERE. One grammar, evaluated everywhere.',
+      },
+      {
+        icon: '⚙️',
+        discipline: 'Software Architecture',
+        term: 'Configuration over code',
+        body: 'A recipe is a stored object, not a branch in a function. The same row drives the query, the menu item, the URL, the RBAC gate, the UI, and a pub/sub condition. Behaviour lives in data a non-developer can edit, not in code that needs a deploy — the inversion at the heart of the whole system.',
+      },
+      {
+        icon: '🪆',
+        discipline: 'Design Patterns',
+        term: 'Composite + Interpreter',
+        body: 'The { logic: AND|OR, rules: [...] } structure is the Composite pattern — a rule node and a group node share one shape and nest arbitrarily. The engine that walks that tree to a yes/no answer is the Interpreter pattern. These are the two GoF patterns a condition language always reaches for.',
+      },
+      {
+        icon: '🔭',
+        discipline: 'Scoping',
+        term: 'Lexical-scope analogy (tiers)',
+        body: 'System → Organization → User recipe tiers resolve like nested lexical scopes: a user recipe is looked up first but is additive and can never shadow a system slug, and it always narrows (ANDs) under the caller\'s security scope. "Narrow, never widen" is the invariant that makes sharing safe.',
+      },
+    ],
+    docRefs: [
+      { file: 'docs/CREAM-PIE.md', note: 'The original design: the CreamPie abstract, Context Store anatomy, and the engine.' },
+      { file: 'docs/architecture/DOCTRINE.md', note: '§3 one condition dialect (CREAM-PQL); §4 recipes are tiered, condition-shared.' },
+      { file: 'docs/LOADED-CREAM-PIE-STRATEGY.md', note: '§3 decisions C2/C3/C19 — recipes stay tiered, the URL param is ?recipe=, and the CSV grammar translation.' },
+    ],
     activity: {
       kind: 'build',
       prompt: 'Complete this CREAM-PIE recipe for a "High Priority Open Tickets" view',
@@ -295,16 +424,52 @@ const LEVELS: Level[] = [
       ],
       highlight: 'Perspective: the path you traverse to reach data determines what it means. Same records, different relationship edge, different truth.',
     },
+    concepts: [
+      {
+        icon: '🕸️',
+        discipline: 'Databases',
+        term: 'Graph data model (nodes + typed edges)',
+        body: 'Standard SaaS partitions data with a single organization_id column — a flat, relational silo. CI Connect instead models organizations and contacts as nodes joined by typed, directed, bidirectional edges (OWNER, REFERRER, VENDOR…). That is a property graph (think Neo4j / RDF triples) living inside Postgres via the RELATIONSHIP List and junction rows. Visibility is a graph traversal, not a column filter.',
+      },
+      {
+        icon: '🧭',
+        discipline: 'Data / Semantics',
+        term: 'Context-dependent meaning (the same edge, two readings)',
+        body: '"Perspective" is the idea that a fact\'s meaning depends on the path taken to reach it. Crystal\'s $12k shows as Direct MRR along the OWNER edge and the same payments show as Indirect MRR along a REFERRER edge. In graph terms the aggregate is a function of the traversal, not of the node alone.',
+      },
+      {
+        icon: '🔐',
+        discipline: 'Security / Access Control',
+        term: 'ABAC over RBAC (deny-first)',
+        body: 'PRBAC = Action + Object + Organization-Context + Condition. Adding the context and condition turns plain role-based access control (RBAC) into attribute-based (ABAC). The default answer is DENY; access needs an explicit allow policy — the safe default (default-deny) for anything touching money or PII. Implemented with CASL abilities.',
+      },
+      {
+        icon: '🎟️',
+        discipline: 'Auth / Sessions',
+        term: 'Claims in a JWT (stateless context)',
+        body: 'At login you pick an organization; that choice is encoded as a claim in the JWT, so every request already carries "which org am I acting as." The same person is an Account Manager at one org and a plain contact at another — identity is resolved AFTER tenancy, deliberately.',
+      },
+    ],
+    docRefs: [
+      { file: 'docs/architecture/ERP-PRIMITIVES.md', note: 'RELATIONSHIP as an RDF predicate / triple; §6 the unanswered licensee-boundary question.' },
+      { file: 'docs/architecture/SEEDED-LISTS.md', note: 'The mirrored RELATIONSHIP lists (organizationRelationshipType, organizationRole) and their definition tables.' },
+      { file: 'docs/architecture/DOCTRINE.md', note: '§1 RELATIONSHIP labels an edge; the bidirectional A-of-B ⇒ B-of-A rule.' },
+    ],
     activity: {
-      kind: 'trace',
-      prompt: 'Trace how a user\'s organization context determines their capability. Click each step to reveal what happens.',
-      steps: [
-        { id: 'login', label: 'User logs in', detail: 'Authentication succeeds. The user has a contact record linked to multiple organizations.', color: 'var(--blue)' },
-        { id: 'orgpick', label: 'Organization context selected', detail: 'User picks "CI Web Group" from their org list. This context is encoded in the JWT.', color: 'var(--purple-l)' },
-        { id: 'identity', label: 'Identity resolved', detail: 'The system reads the user\'s role at CI Web Group: "Account Manager". RBAC abilities are now computed for this org context.', color: 'var(--teal)' },
-        { id: 'request', label: 'User requests a resource', detail: 'User navigates to Finance > Invoices. The request carries the org context from the JWT.', color: 'var(--orange-l)' },
-        { id: 'gate', label: 'PRBAC gate evaluated', detail: 'Can(read, Invoice, { org: CI_WEB_GROUP, role: account_manager }) → ALLOW. Deny-first policy: allowed only because an explicit policy grants it.', color: 'var(--green)' },
-        { id: 'scope', label: 'Data scoped to context', detail: 'The query is narrowed to invoices where organizationId = CI Web Group, plus any related orgs the user\'s perspective includes.', color: 'var(--yellow)' },
+      kind: 'graph',
+      prompt: 'Click a node to see its typed edges. Follow Crystal\'s edges and watch how the SAME payments read as Direct vs Indirect MRR depending on the edge you traverse.',
+      focusHint: 'Start with Crystal (the contact). Her OWNER edge and her REFERRER edge reach different orgs — and attribute their revenue differently.',
+      nodes: [
+        { id: 'crystal', label: 'Crystal', type: 'Contact', color: 'var(--purple-l)' },
+        { id: 'lemonseed', label: 'LemonSeed', type: 'Organization', color: 'var(--green)', mrr: 12000 },
+        { id: 'acme', label: 'Acme HVAC', type: 'Organization', color: 'var(--blue)', mrr: 4500 },
+        { id: 'ciweb', label: 'CI Web Group', type: 'Organization', color: 'var(--orange-l)' },
+      ],
+      edges: [
+        { from: 'crystal', to: 'lemonseed', label: 'OWNER', perspective: 'Crystal OWNS LemonSeed → its $12k/mo counts as her DIRECT MRR.' },
+        { from: 'crystal', to: 'acme', label: 'REFERRER', perspective: 'Crystal REFERRED Acme HVAC → its $4.5k/mo counts as her INDIRECT MRR. Same kind of payment rows, different edge, different attribution.' },
+        { from: 'ciweb', to: 'lemonseed', label: 'ACCOUNT_MANAGER_OF', perspective: 'CI Web Group manages LemonSeed. Traverse from CI Web Group and LemonSeed is a managed account, not an owned company — a third reading of the same node.' },
+        { from: 'crystal', to: 'ciweb', label: 'AMBASSADOR_OF', perspective: 'Crystal is also an Ambassador of CI Web Group. One contact, three simultaneous edges, three roles.' },
       ],
     },
     questions: [
@@ -363,28 +528,58 @@ const LEVELS: Level[] = [
       ],
       highlight: 'Module manifest → Guesser → ResourceView → EntityList. Config drives the UI. Code only when config can\'t.',
     },
+    concepts: [
+      {
+        icon: '🏭',
+        discipline: 'Metaprogramming',
+        term: 'Declarative, data-driven UI generation',
+        body: 'Instead of imperative code per screen, you declare what a resource is and a generator produces the screen. This is the same idea as Rails scaffolding, Django admin, or GraphQL schema-first tooling — and directly inspired by React-Admin\'s "Guesser." The manifest is the schema; the engine is the code generator that never writes a file.',
+      },
+      {
+        icon: '🧠',
+        discipline: 'Programming Languages',
+        term: 'Type inference',
+        body: 'The Guesser infers the view the way a compiler infers a type: from the shape of the data. "One single-select STAGE list with ≥3 values" ⇒ offer a Kanban board, with zero annotation — exactly like let x = 3 inferring number. You only write an explicit override when inference guesses wrong.',
+      },
+      {
+        icon: '📐',
+        discipline: 'Software Design',
+        term: 'Convention over configuration + layered overrides',
+        body: 'A sensible default comes for free (convention); you only configure the exceptions. The fold is Guesser default → registered template → saved-view presentation, and each layer may only ADD or NARROW, never break the one below — the same safe-override discipline as CSS cascade or method overriding with a strengthened contract.',
+      },
+      {
+        icon: '💧',
+        discipline: 'Tech debt',
+        term: 'WET as the inverse of DRY (made visible)',
+        body: 'Screens that can\'t yet be generated are "WET" (Write Everything Twice) and are quarantined under a visible menu, each with a required reason. Naming and counting the debt is what lets it shrink — the same philosophy as the anatomy ratchet from Level 1.',
+      },
+    ],
+    docRefs: [
+      { file: 'docs/architecture/DECISIONS-resource-views.md', note: 'V1–V10 — the ResourceView template, the narrowing rule, and the WET quarantine.' },
+      { file: 'docs/architecture/MODULE-STRUCTURE.md', note: '§1–§3 — what module.json declares and the three registries a module writes into.' },
+      { file: 'docs/CREAM-PIE.md', note: 'The "Guesser" inspiration and the ResourceView / Rendering Engine sketch.' },
+    ],
     activity: {
-      kind: 'build',
-      prompt: 'Given a resource declaration, predict what the Template Engine will generate',
-      slots: [
-        {
-          id: 'view_kanban',
-          label: 'Will Kanban be offered? (resource has helpdeskTicketStage STAGE with 5 values)',
-          options: ['No — Kanban requires a custom component', 'Yes — STAGE list with 3+ values triggers the Guesser rule', 'Only if the manifest sets showKanban: true', 'Only for Admin users'],
-          correct: 'Yes — STAGE list with 3+ values triggers the Guesser rule',
-        },
-        {
-          id: 'tabs',
-          label: 'What do TAXONOMY lists become in the UI?',
-          options: ['Nothing — TAXONOMY lists are not rendered', 'Kanban columns', 'Primary tabs, chip toggles, and select filters', 'Read-only labels on each row'],
-          correct: 'Primary tabs, chip toggles, and select filters',
-        },
-        {
-          id: 'override',
-          label: 'A developer registers a template for "organizations". What happens to the Guesser\'s default?',
-          options: ['The Guesser default is deleted', 'The registered template overrides the Guesser output for that resource', 'Both render — the user picks', 'The registered template is ignored — Guesser always wins'],
-          correct: 'The registered template overrides the Guesser output for that resource',
-        },
+      kind: 'uimock',
+      prompt: 'This is a simulated Synapse EntityList for helpdesk_tickets. The resource has one STAGE list (helpdeskTicketStage), so the Guesser gave it stage tabs. Click a tab — watch the URL and the rows update. No per-screen code wrote this.',
+      resource: 'helpdesk_tickets',
+      lessonText: 'Every tab you clicked set ?recipe / ?when on the URL — the filter state lives in the address bar, so the view is shareable by link. The tabs exist purely because a STAGE list was declared on the resource. Add a value in the Lists admin and a new tab appears with no deploy.',
+      stageList: [
+        { key: 'open', label: 'Open', color: 'var(--blue)' },
+        { key: 'in_progress', label: 'In Progress', color: 'var(--purple-l)' },
+        { key: 'waiting_on_client', label: 'Waiting on Client', color: 'var(--orange-l)' },
+        { key: 'escalated', label: 'Escalated', color: 'var(--pink)' },
+        { key: 'resolved', label: 'Resolved', color: 'var(--green)' },
+      ],
+      rows: [
+        { id: 4821, name: 'Login page 500 error', stage: 'escalated', meta: 'Acme HVAC · High' },
+        { id: 4822, name: 'Logo upload fails', stage: 'open', meta: 'LemonSeed · Medium' },
+        { id: 4823, name: 'SEO report missing', stage: 'in_progress', meta: 'Acme HVAC · Low' },
+        { id: 4824, name: 'Add user to portal', stage: 'resolved', meta: 'Delta Air · Low' },
+        { id: 4825, name: 'Domain DNS cutover', stage: 'waiting_on_client', meta: 'LemonSeed · High' },
+        { id: 4826, name: 'Billing address wrong', stage: 'open', meta: 'Crystal Co · Medium' },
+        { id: 4827, name: 'Reschedule onboarding', stage: 'in_progress', meta: 'Delta Air · Medium' },
+        { id: 4828, name: 'Password reset loop', stage: 'escalated', meta: 'Acme HVAC · Urgent' },
       ],
     },
     questions: [
@@ -442,20 +637,78 @@ const LEVELS: Level[] = [
       ],
       highlight: 'Triage first: data (Lists admin, no code) vs code (a missing relation / model / recipe). "Admin UI not migrations" is about vocabulary VALUES. A missing relationship is schema — declare it, let CREAM-PQL traverse it, never hand-roll a resolver.',
     },
+    concepts: [
+      {
+        icon: '🧮',
+        discipline: 'Data Modeling',
+        term: 'Relationship vs resolver (declare the edge)',
+        body: 'A many-to-many link already stored as junction rows (CampaignMember) only needs a declared relation for the query engine to traverse it — like adding a foreign-key relation so an ORM can JOIN. Hand-writing a resolver that side-queries and builds a custom WHERE re-implements the JOIN by hand: more code, a second filter dialect, and a bug surface. Declare the relation; delete the resolver.',
+      },
+      {
+        icon: '🔗',
+        discipline: 'Databases',
+        term: 'Query planner / path traversal',
+        body: 'With the relation declared, when[campaignMembers][some][campaignId][eq]=8 compiles to a nested Prisma where — the engine plans the traversal across the junction table for you. "some" is an existential quantifier over the edge, the relational-algebra semijoin. You express intent; the planner does the work.',
+      },
+      {
+        icon: '🚦',
+        discipline: 'Software Process',
+        term: 'Triage / decision tree before implementation',
+        body: 'The discipline is to classify the request first: is it data (a value → Lists admin, no deploy) or structure (a relation / model / recipe → code)? Choosing the mechanism before writing anything is the same instinct as "measure before you optimise" — it stops the default reflex ("write some code") from bypassing the engine and piling up one-offs.',
+      },
+    ],
+    docRefs: [
+      { file: 'docs/architecture/DOCTRINE.md', note: '§2 discriminators over duplicate models; §3 one condition dialect (the resolver anti-pattern).' },
+      { file: 'modules/crm/module.json', note: 'The real CRM manifest — the distributor/relationship pattern (commit 87b8972eb) is the model to imitate.' },
+      { file: 'modules/_schema/module.schema.json', note: 'The field grammar, including { "type": "relation", "relationTo": "<Model>" } used to declare a navigable edge.' },
+    ],
     activity: {
-      kind: 'sort',
-      prompt: 'Sort each request into: "Lists admin UI (data, no code)" vs "Code change (relation / model / recipe)"',
-      buckets: [
-        { id: 'ui', label: '🖥️ Lists admin UI — no code', color: 'var(--blue)' },
-        { id: 'code', label: '💻 Code change', color: 'var(--orange-l)' },
+      kind: 'query',
+      prompt: 'Build the CREAM-PQL filter for: "Open or in-progress tickets for Acme HVAC, reached through campaign #8 by membership." Watch the ?when[...] URL and the compiled Prisma where build as you go.',
+      resource: 'leads',
+      goalText: 'Goal: status is open OR in_progress, organization is Acme HVAC, AND the lead is a member of campaign 8 (traversed through the declared campaignMembers relation — no resolver).',
+      goal: [
+        { field: 'lists.leadStatus', op: 'in', value: 'open,in_progress' },
+        { field: 'organizationId', op: 'eq', value: 'acme' },
+        { field: 'campaignMembers.campaignId', op: 'eq', value: '8' },
       ],
-      items: [
-        { id: 'a', label: 'Add a "Churned" value to customer status', bucket: 'ui' },
-        { id: 'b', label: 'Add a new campaign-member role "sponsor"', bucket: 'ui' },
-        { id: 'c', label: 'Make the Leads filter match leads linked to a campaign by membership', bucket: 'code' },
-        { id: 'd', label: 'Rename the "At Risk" label to "Needs Attention"', bucket: 'ui' },
-        { id: 'e', label: 'Add a saved "Hot HVAC leads" perspective for yourself', bucket: 'ui' },
-        { id: 'f', label: 'Let leads relate to Distributors (a link that does not exist yet)', bucket: 'code' },
+      fields: [
+        {
+          key: 'lists.leadStatus',
+          label: 'lists.leadStatus',
+          ops: ['eq', 'in'],
+          values: [
+            { value: 'open', label: 'open' },
+            { value: 'open,in_progress', label: 'open, in_progress' },
+            { value: 'resolved', label: 'resolved' },
+          ],
+        },
+        {
+          key: 'organizationId',
+          label: 'organizationId',
+          ops: ['eq'],
+          values: [
+            { value: 'acme', label: 'Acme HVAC' },
+            { value: 'lemonseed', label: 'LemonSeed' },
+          ],
+        },
+        {
+          key: 'campaignMembers.campaignId',
+          label: 'campaignMembers.campaignId  (relation!)',
+          ops: ['eq'],
+          values: [
+            { value: '8', label: '8' },
+            { value: '3', label: '3' },
+          ],
+        },
+        {
+          key: 'campaignId',
+          label: 'campaignId  (the stamp — the trap)',
+          ops: ['eq'],
+          values: [
+            { value: '8', label: '8' },
+          ],
+        },
       ],
     },
     questions: [
@@ -851,7 +1104,351 @@ function ActivityRouter({ activity, onComplete }: { activity: ActivityType; onCo
   if (activity.kind === 'match') return <MatchActivity activity={activity} onComplete={onComplete} />;
   if (activity.kind === 'build') return <BuildActivity activity={activity} onComplete={onComplete} />;
   if (activity.kind === 'trace') return <TraceActivity activity={activity} onComplete={onComplete} />;
+  if (activity.kind === 'graph') return <GraphActivity activity={activity} onComplete={onComplete} />;
+  if (activity.kind === 'query') return <QueryActivity activity={activity} onComplete={onComplete} />;
+  if (activity.kind === 'uimock') return <UiMockActivity activity={activity} onComplete={onComplete} />;
   return null;
+}
+
+// ── Graph activity ─────────────────────────────────────────────────────────
+// Interactive relationship explorer. Click a node to light up its typed edges
+// and read how the SAME data reads differently per edge (Perspective).
+function GraphActivity({ activity, onComplete }: {
+  activity: Extract<ActivityType, { kind: 'graph' }>;
+  onComplete: () => void;
+}) {
+  const [focus, setFocus] = useState<string | null>(null);
+  const [visited, setVisited] = useState<Set<string>>(new Set());
+
+  const focusEdges = activity.edges.filter(e => e.from === focus || e.to === focus);
+  const exploredEnough = visited.size >= Math.min(2, activity.nodes.length);
+
+  function pick(id: string) {
+    setFocus(id);
+    setVisited(v => new Set(v).add(id));
+  }
+
+  function other(edge: { from: string; to: string }, id: string) {
+    const otherId = edge.from === id ? edge.to : edge.from;
+    return activity.nodes.find(n => n.id === otherId);
+  }
+
+  return (
+    <div className="activity activity--graph">
+      <p className="activity__prompt">{activity.prompt}</p>
+      {!focus && <p className="activity__hint">{activity.focusHint}</p>}
+
+      {/* Node cloud */}
+      <div className="graph-nodes">
+        {activity.nodes.map(n => {
+          const connected =
+            focus &&
+            focus !== n.id &&
+            activity.edges.some(
+              e => (e.from === focus && e.to === n.id) || (e.to === focus && e.from === n.id),
+            );
+          return (
+            <button
+              key={n.id}
+              className={`graph-node ${focus === n.id ? 'graph-node--focus' : ''} ${connected ? 'graph-node--connected' : ''}`}
+              style={{ '--node-color': n.color } as React.CSSProperties}
+              onClick={() => pick(n.id)}
+            >
+              <span className="graph-node__type">{n.type}</span>
+              <span className="graph-node__label">{n.label}</span>
+              {typeof n.mrr === 'number' && (
+                <span className="graph-node__mrr">${n.mrr.toLocaleString()}/mo</span>
+              )}
+            </button>
+          );
+        })}
+      </div>
+
+      {/* Edges of the focused node */}
+      {focus && (
+        <div className="graph-edges animate-fade-in">
+          <div className="graph-edges__head">
+            Edges from <strong>{activity.nodes.find(n => n.id === focus)?.label}</strong>
+          </div>
+          {focusEdges.map((e, i) => {
+            const o = other(e, focus);
+            return (
+              <div key={i} className="graph-edge">
+                <div className="graph-edge__rel">
+                  <span className="graph-edge__arrow">—[{e.label}]→</span>
+                  <span className="graph-edge__target">{o?.label}</span>
+                </div>
+                <p className="graph-edge__perspective">{e.perspective}</p>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {!exploredEnough ? (
+        <p className="activity__hint">Explore at least two nodes to continue.</p>
+      ) : (
+        <div className="activity__result">
+          <p className="activity__result-text">
+            Same payment records, different attribution — that is Perspective. The graph is a
+            property graph (nodes + typed edges) living in Postgres, and an aggregate like MRR is a
+            function of the <em>path you traversed</em>, not of the node alone.
+          </p>
+          <button className="activity__next-btn" onClick={onComplete}>Continue to quiz →</button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── Query activity ─────────────────────────────────────────────────────────
+// A CREAM-PQL builder. The learner adds rules; the ?when[...] URL and the
+// compiled Prisma where render live. Completing the goal reveals the lesson.
+function QueryActivity({ activity, onComplete }: {
+  activity: Extract<ActivityType, { kind: 'query' }>;
+  onComplete: () => void;
+}) {
+  type Rule = { field: string; op: string; value: string };
+  const [rules, setRules] = useState<Rule[]>([]);
+  const [field, setField] = useState('');
+  const [op, setOp] = useState('');
+  const [value, setValue] = useState('');
+
+  const fieldDef = activity.fields.find(f => f.key === field);
+
+  function addRule() {
+    if (!field || !op || !value) return;
+    setRules(r => [...r.filter(x => x.field !== field), { field, op, value }]);
+    setField(''); setOp(''); setValue('');
+  }
+  function removeRule(f: string) {
+    setRules(r => r.filter(x => x.field !== f));
+  }
+
+  // Serialize to the ?when[...] grammar
+  const whenUrl =
+    '/api/v1/' +
+    activity.resource +
+    (rules.length
+      ? '?' + rules.map(r => `when[${r.field}][${r.op}]=${encodeURIComponent(r.value)}`).join('&')
+      : '');
+
+  // A readable Prisma-ish where
+  const prismaWhere =
+    '{\n' +
+    rules
+      .map(r => {
+        if (r.field.includes('.') && !r.field.startsWith('lists.')) {
+          const [rel, col] = r.field.split('.');
+          return `  ${rel}: { some: { ${col}: { ${r.op}: ${fmt(r.value)} } } }`;
+        }
+        return `  ${r.field}: { ${r.op}: ${fmt(r.value)} }`;
+      })
+      .join(',\n') +
+    (rules.length ? '\n' : '') +
+    '}';
+
+  function fmt(v: string) {
+    if (v.includes(',')) return '[' + v.split(',').map(s => `"${s.trim()}"`).join(', ') + ']';
+    return /^\d+$/.test(v) ? v : `"${v}"`;
+  }
+
+  const goalMet =
+    activity.goal.every(g =>
+      rules.some(r => r.field === g.field && r.op === g.op && r.value === g.value),
+    ) && rules.length === activity.goal.length;
+
+  const usedTrap = rules.some(r => r.field === 'campaignId');
+
+  return (
+    <div className="activity activity--query">
+      <p className="activity__prompt">{activity.prompt}</p>
+      <div className="query-goal">{activity.goalText}</div>
+
+      {/* Rule builder */}
+      <div className="query-builder">
+        <select className="query-sel" value={field} onChange={e => { setField(e.target.value); setOp(''); setValue(''); }}>
+          <option value="">field…</option>
+          {activity.fields.map(f => <option key={f.key} value={f.key}>{f.label}</option>)}
+        </select>
+        <select className="query-sel" value={op} disabled={!fieldDef} onChange={e => setOp(e.target.value)}>
+          <option value="">op…</option>
+          {fieldDef?.ops.map(o => <option key={o} value={o}>{o}</option>)}
+        </select>
+        <select className="query-sel" value={value} disabled={!fieldDef} onChange={e => setValue(e.target.value)}>
+          <option value="">value…</option>
+          {fieldDef?.values.map(v => <option key={v.value} value={v.value}>{v.label}</option>)}
+        </select>
+        <button className="query-add" disabled={!field || !op || !value} onClick={addRule}>+ Add rule</button>
+      </div>
+
+      {/* Current rules */}
+      {rules.length > 0 && (
+        <div className="query-rules">
+          {rules.map(r => (
+            <span key={r.field} className={`query-rule ${r.field === 'campaignId' ? 'query-rule--trap' : ''}`}>
+              {r.field} {r.op} {r.value}
+              <button onClick={() => removeRule(r.field)}>✕</button>
+            </span>
+          ))}
+        </div>
+      )}
+
+      {/* Live output */}
+      <div className="query-output">
+        <div className="query-output__label">URL (the filter state lives here)</div>
+        <pre className="query-output__url">{whenUrl}</pre>
+        <div className="query-output__label">compiles to Prisma where</div>
+        <pre className="query-output__where">{prismaWhere}</pre>
+      </div>
+
+      {usedTrap && (
+        <div className="query-trap-warn">
+          ⚠ You used <code>campaignId</code> — the stamp on the lead. That misses leads linked only
+          by a <code>CampaignMember</code> row. The fix is the declared relation{' '}
+          <code>campaignMembers.campaignId</code>, not the stamp.
+        </div>
+      )}
+
+      {!goalMet ? (
+        <p className="activity__hint">
+          Add rules until the where matches the goal. Hint: reach the campaign through the relation
+          (<code>campaignMembers.campaignId</code>), and use <code>in</code> for two statuses.
+        </p>
+      ) : (
+        <div className="activity__result">
+          <div className="activity__result-score">Query matches the goal ✓</div>
+          <p className="activity__result-text">
+            You never wrote a resolver. The <code>campaignMembers.campaignId</code> rule traversed a
+            declared relation — the stock compiler planned the junction-table join (a semijoin via{' '}
+            <code>some</code>). One dialect, from URL to Prisma where, with zero bespoke filter code.
+          </p>
+          <button className="activity__next-btn" onClick={onComplete}>Continue to quiz →</button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── UI-mock activity ───────────────────────────────────────────────────────
+// A simulated Synapse EntityList. Stage tabs come from a STAGE list; clicking
+// one updates the "URL" and filters rows — config-generated, no per-screen code.
+function UiMockActivity({ activity, onComplete }: {
+  activity: Extract<ActivityType, { kind: 'uimock' }>;
+  onComplete: () => void;
+}) {
+  const [active, setActive] = useState<string>('all');
+  const [touched, setTouched] = useState<Set<string>>(new Set());
+  const [view, setView] = useState<'table' | 'kanban'>('table');
+
+  const visible = active === 'all' ? activity.rows : activity.rows.filter(r => r.stage === active);
+  const url =
+    '/' + activity.resource.replace(/_/g, '-') + (active === 'all' ? '' : `?when[lists.helpdeskTicketStage][eq]=${active}`);
+  const stageOf = (k: string) => activity.stageList.find(s => s.key === k);
+  const exploredEnough = touched.size >= 2;
+
+  function clickTab(key: string) {
+    setActive(key);
+    if (key !== 'all') setTouched(t => new Set(t).add(key));
+  }
+
+  return (
+    <div className="activity activity--uimock">
+      <p className="activity__prompt">{activity.prompt}</p>
+
+      {/* Simulated browser chrome */}
+      <div className="mock">
+        <div className="mock__bar">
+          <span className="mock__dot" /><span className="mock__dot" /><span className="mock__dot" />
+          <span className="mock__url">{url}</span>
+        </div>
+
+        <div className="mock__toolbar">
+          <span className="mock__resource">{activity.resource}</span>
+          <div className="mock__viewtoggle">
+            <button className={view === 'table' ? 'mock__vt--on' : ''} onClick={() => setView('table')}>☰ Table</button>
+            <button className={view === 'kanban' ? 'mock__vt--on' : ''} onClick={() => setView('kanban')}>▦ Kanban</button>
+          </div>
+        </div>
+
+        {/* Stage tabs (derived from the STAGE list) */}
+        <div className="mock__tabs">
+          <button className={`mock__tab ${active === 'all' ? 'mock__tab--on' : ''}`} onClick={() => clickTab('all')}>
+            All <span className="mock__count">{activity.rows.length}</span>
+          </button>
+          {activity.stageList.map(s => {
+            const n = activity.rows.filter(r => r.stage === s.key).length;
+            return (
+              <button
+                key={s.key}
+                className={`mock__tab ${active === s.key ? 'mock__tab--on' : ''}`}
+                style={{ '--tab-color': s.color } as React.CSSProperties}
+                onClick={() => clickTab(s.key)}
+              >
+                {s.label} <span className="mock__count">{n}</span>
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Body: table or kanban */}
+        {view === 'table' ? (
+          <div className="mock__table">
+            {visible.map(r => (
+              <div key={r.id} className="mock__row">
+                <span className="mock__row-id">#{r.id}</span>
+                <span className="mock__row-name">{r.name}</span>
+                <span className="mock__row-stage" style={{ color: stageOf(r.stage)?.color }}>
+                  ● {stageOf(r.stage)?.label}
+                </span>
+                <span className="mock__row-meta">{r.meta}</span>
+              </div>
+            ))}
+            {visible.length === 0 && <div className="mock__empty">No rows in this stage.</div>}
+          </div>
+        ) : (
+          <div className="mock__kanban">
+            {activity.stageList.map(s => (
+              <div key={s.key} className="mock__col" style={{ '--tab-color': s.color } as React.CSSProperties}>
+                <div className="mock__col-head">{s.label}</div>
+                {activity.rows.filter(r => r.stage === s.key).map(r => (
+                  <div key={r.id} className="mock__card">
+                    <div className="mock__card-name">{r.name}</div>
+                    <div className="mock__card-meta">{r.meta}</div>
+                  </div>
+                ))}
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {!exploredEnough ? (
+        <p className="activity__hint">
+          Click at least two stage tabs (and try the Kanban toggle) to continue.
+        </p>
+      ) : (
+        <div className="activity__result">
+          <p className="activity__result-text">{activity.lessonText}</p>
+          <button className="activity__next-btn" onClick={onComplete}>Continue to quiz →</button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// Short label for the hub card describing a level's practice activity.
+function activityMeta(kind: ActivityType['kind']): string {
+  switch (kind) {
+    case 'sort': return '🗂️ Sort';
+    case 'match': return '🔗 Match';
+    case 'build': return '🧱 Build';
+    case 'trace': return '🔀 Trace';
+    case 'graph': return '🕸️ Graph';
+    case 'query': return '🔍 Query';
+    case 'uimock': return '🖥️ Live UI';
+    default: return '🎮 Practice';
+  }
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -988,6 +1585,56 @@ export default function CoursePage() {
               {level.intro.highlight}
             </blockquote>
 
+            {/* Cross-disciplinary concept callouts */}
+            {level.concepts && level.concepts.length > 0 && (
+              <div className="course__concepts">
+                <div className="course__concepts-head">
+                  <span className="course__concepts-title">Connecting the dots</span>
+                  <span className="course__concepts-sub">
+                    How this maps to ideas you may already know
+                  </span>
+                </div>
+                <div className="course__concepts-grid">
+                  {level.concepts.map((c, i) => (
+                    <div
+                      key={i}
+                      className="course__concept"
+                      style={{ '--lc-color': level.color } as React.CSSProperties}
+                    >
+                      <div className="course__concept-top">
+                        <span className="course__concept-icon">{c.icon}</span>
+                        <div>
+                          <div className="course__concept-discipline">{c.discipline}</div>
+                          <div className="course__concept-term">{c.term}</div>
+                        </div>
+                      </div>
+                      <p className="course__concept-body">{c.body}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Documentation references */}
+            {level.docRefs && level.docRefs.length > 0 && (
+              <div className="course__docrefs">
+                <div className="course__docrefs-head">
+                  📄 Documented in
+                  <span className="course__docrefs-hint">
+                    — read the full source in the Documentation tab
+                  </span>
+                </div>
+                <ul className="course__docrefs-list">
+                  {level.docRefs.map((d, i) => (
+                    <li key={i} className="course__docref">
+                      <code className="course__docref-file">{d.file}</code>
+                      <span className="course__docref-note">{d.note}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
             <button className="course__phase-btn" style={{ background: level.color }} onClick={startActivity}>
               Got it — let me practice →
             </button>
@@ -1003,6 +1650,9 @@ export default function CoursePage() {
                 level.activity.kind === 'sort' ? 'Sort the examples' :
                 level.activity.kind === 'match' ? 'Match the types' :
                 level.activity.kind === 'build' ? 'Build the recipe' :
+                level.activity.kind === 'graph' ? 'Explore the relationship graph' :
+                level.activity.kind === 'query' ? 'Build a CREAM-PQL query' :
+                level.activity.kind === 'uimock' ? 'Drive a live Synapse view' :
                 'Trace the flow'
               }</h3>
             </div>
@@ -1102,8 +1752,10 @@ export default function CoursePage() {
         <div className="section__label">Learning Mode</div>
         <h1 className="section__title">Synapse Architecture Course</h1>
         <p className="section__desc">
-          6 levels. Each one has an introduction, a hands-on activity, and a knowledge check.
-          Complete 67%+ of the quiz to pass a level. Progress is saved in this session.
+          6 levels. Each has an introduction with cross-disciplinary context (databases, data
+          structures, software architecture), a hands-on interactive activity, and a knowledge
+          check. Every level links to the source documentation it draws from. Complete 67%+ of
+          the quiz to pass a level. Progress is saved in this session.
         </p>
         <div className="course__progress-bar-container">
           <div className="course__progress-bar-fill" style={{ width: `${pct}%` }} />
@@ -1135,7 +1787,7 @@ export default function CoursePage() {
               <div className="course__level-right">
                 <div className="course__level-meta">
                   <span>📖 Read</span>
-                  <span>🎮 Practice</span>
+                  <span>{activityMeta(level.activity.kind)}</span>
                   <span>📝 {level.questions.length} Qs</span>
                 </div>
                 {!isLocked && (
