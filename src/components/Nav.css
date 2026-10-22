@@ -188,7 +188,11 @@
 }
 
 /* ── Responsive ── */
-@media (max-width: 680px) {
+@media (max-width: 1180px) {
+  .nav__link { padding: 0.4rem 0.6rem; font-size: 0.85rem; }
+}
+
+@media (max-width: 960px) {
   .nav__links { display: none; }
   .nav__burger { display: block; }
 }

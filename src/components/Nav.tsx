@@ -1,20 +1,14 @@
 import { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import './Nav.css';
-
-type Page = 'home' | 'course' | 'glossary' | 'docs';
+import { type Page, PAGES } from '../types';
 
 interface Props {
   page: Page;
   setPage: (p: Page) => void;
 }
 
-const LINKS: { page: Page; label: string }[] = [
-  { page: 'home', label: 'Architecture' },
-  { page: 'course', label: 'Course' },
-  { page: 'docs', label: 'Documentation' },
-  { page: 'glossary', label: 'Glossary' },
-];
+const LINKS = PAGES;
 
 export default function Nav({ page, setPage }: Props) {
   const [menuOpen, setMenuOpen] = useState(false);
