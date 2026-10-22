@@ -1,0 +1,22 @@
+.tut-legend { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-bottom: 1.5rem; }
+
+.tut { display: grid; grid-template-columns: 280px 1fr; gap: 2rem; align-items: start; }
+@media (max-width: 900px) { .tut { grid-template-columns: 1fr; } }
+
+.tut__side { position: sticky; top: 84px; display: grid; gap: 1.1rem; }
+@media (max-width: 900px) { .tut__side { position: static; } }
+.tut__group-title { font-size: 0.7rem; font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-dim); margin-bottom: 0.35rem; }
+.tut__link { width: 100%; display: flex; gap: 0.55rem; align-items: baseline; text-align: left; background: none; border: 1px solid transparent; color: var(--text-dim); font: inherit; font-size: 0.88rem; padding: 0.45rem 0.6rem; border-radius: 8px; cursor: pointer; line-height: 1.4; }
+.tut__link:hover { background: var(--bg3); color: var(--text); }
+.tut__link--on { background: var(--surface); border-color: var(--v); color: var(--text); }
+.tut__dot { flex: 0 0 8px; height: 8px; border-radius: 50%; background: var(--v); transform: translateY(-1px); }
+
+.tut__main { min-width: 0; }
+.tut__title { font-size: clamp(1.4rem, 2.6vw, 2rem); font-weight: 800; letter-spacing: -0.02em; margin-bottom: 0.5rem; }
+.tut__goal { color: var(--text-dim); margin-bottom: 1rem; }
+.tut__triage { border: 1px solid color-mix(in srgb, var(--v) 40%, transparent); background: color-mix(in srgb, var(--v) 6%, var(--surface)); border-radius: var(--radius-sm); padding: 0.9rem 1.1rem; }
+.tut__triage-head { display: flex; justify-content: space-between; align-items: center; gap: 0.5rem; margin-bottom: 0.4rem; font-size: 0.72rem; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; color: var(--v); }
+.tut__pitfalls { padding-left: 1.1rem; }
+.tut__pitfalls li + li { margin-top: 0.4rem; }
+.tut__pitfalls .md__p { margin: 0; }
+.tut__next { display: flex; justify-content: space-between; gap: 1rem; margin-top: 2rem; flex-wrap: wrap; }
