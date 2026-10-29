@@ -130,6 +130,7 @@ export default function DocumentationPage() {
                       </span>
                       <span className="docs__nav-icon">{doc.icon}</span>
                       <span className="docs__nav-doc-title">{doc.short}</span>
+                      {doc.removed && <span className="docs__nav-removed" title="Deleted from the repo; historical snapshot">archived</span>}
                     </button>
 
                     {isActive && (
@@ -169,6 +170,13 @@ export default function DocumentationPage() {
                   <span className="docs__article-icon">{activeDoc.icon}</span>
                   <span className="docs__article-source">{activeDoc.source}</span>
                 </div>
+                {activeDoc.removed && (
+                  <div className="docs__removed">
+                    <strong>Historical snapshot.</strong> This file was deleted from ci-connect on{' '}
+                    {activeDoc.removed.date} (commit <code>{activeDoc.removed.commit}</code>, "delete the archive
+                    and stale docs"); it is still in git history. {activeDoc.removed.note}
+                  </div>
+                )}
                 <h1 className="docs__article-title">{activeDoc.title}</h1>
                 <p className="docs__article-summary">{activeDoc.summary}</p>
 

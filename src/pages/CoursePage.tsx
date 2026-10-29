@@ -131,7 +131,7 @@ const BASE_LEVELS: Level[] = [
     ],
     docRefs: [
       { file: 'docs/architecture/DOCTRINE.md', note: '§1 — the "never hardcode a business vocabulary" rule and the One Vocabulary Layer.' },
-      { file: 'docs/architecture/ERP-PRIMITIVES.md', note: 'Why this is Reference Data Management, not a bag of enums.' },
+      { file: 'docs/architecture/ERP-PRIMITIVES.md', note: '[deleted from the repo Oct 25 — snapshot in the Docs tab] Why this is Reference Data Management, not a bag of enums.' },
     ],
     activity: {
       kind: 'sort',
@@ -232,7 +232,7 @@ const BASE_LEVELS: Level[] = [
       },
     ],
     docRefs: [
-      { file: 'docs/architecture/ERP-PRIMITIVES.md', note: '§1 the SKOS/RDF names; §2 why type is three orthogonal axes; §3 ListType-as-a-List.' },
+      { file: 'docs/architecture/ERP-PRIMITIVES.md', note: '[deleted from the repo Oct 25 — snapshot in the Docs tab] §1 the SKOS/RDF names; §2 why type is three orthogonal axes; §3 ListType-as-a-List.' },
       { file: 'docs/architecture/SEEDED-LISTS.md', note: 'The full catalogue of 98 seeded lists, and the §4.2 dependent sub-list example.' },
       { file: 'docs/api/polymorphic-lists.md', note: 'The List/ListResource models and "add values via admin UI, not migrations."' },
     ],
@@ -341,9 +341,9 @@ const BASE_LEVELS: Level[] = [
       },
     ],
     docRefs: [
-      { file: 'docs/CREAM-PIE.md', note: 'The original design: the CreamPie abstract, Context Store anatomy, and the engine.' },
+      { file: 'docs/CREAM-PIE.md', note: '[deleted from the repo Oct 25 — snapshot in the Docs tab] The original design: the CreamPie abstract, Context Store anatomy, and the engine.' },
       { file: 'docs/architecture/DOCTRINE.md', note: '§3 one condition dialect (CREAM-PQL); §4 recipes are tiered, condition-shared.' },
-      { file: 'docs/LOADED-CREAM-PIE-STRATEGY.md', note: '§3 decisions C2/C3/C19 — recipes stay tiered, the URL param is ?recipe=, and the CSV grammar translation.' },
+      { file: 'docs/LOADED-CREAM-PIE-STRATEGY.md', note: '[deleted from the repo Oct 25 — snapshot in the Docs tab] §3 decisions C2/C3/C19 — recipes stay tiered, the URL param is ?recipe=, and the CSV grammar translation.' },
     ],
     activity: {
       kind: 'build',
@@ -391,7 +391,7 @@ const BASE_LEVELS: Level[] = [
           'Configurable Rendering Engine for APIs, Models, Policies, Integrations & Events',
         ],
         correct: 1,
-        explanation: 'C=Context, R=Rules, E=Engine, A=Application, M=Matrix, P=Polymorphic, I=Injection, E=Execution. Defined in docs/CREAM-PIE.md.',
+        explanation: 'C=Context, R=Rules, E=Engine, A=Application, M=Matrix, P=Polymorphic, I=Injection, E=Execution. Defined in the original docs/CREAM-PIE.md (now deleted; the living reference is docs/architecture/CREAM-PIE.md).',
       },
       {
         q: 'A CREAM-PIE recipe with scope "system" vs scope "user" — what\'s the key difference?',
@@ -463,7 +463,7 @@ const BASE_LEVELS: Level[] = [
       },
     ],
     docRefs: [
-      { file: 'docs/architecture/ERP-PRIMITIVES.md', note: 'RELATIONSHIP as an RDF predicate / triple; §6 the unanswered licensee-boundary question.' },
+      { file: 'docs/architecture/ERP-PRIMITIVES.md', note: '[deleted from the repo Oct 25 — snapshot in the Docs tab] RELATIONSHIP as an RDF predicate / triple; §6 the unanswered licensee-boundary question.' },
       { file: 'docs/architecture/SEEDED-LISTS.md', note: 'The mirrored RELATIONSHIP lists (organizationRelationshipType, organizationRole) and their definition tables.' },
       { file: 'docs/architecture/DOCTRINE.md', note: '§1 RELATIONSHIP labels an edge; the bidirectional A-of-B ⇒ B-of-A rule.' },
     ],
@@ -567,9 +567,9 @@ const BASE_LEVELS: Level[] = [
       },
     ],
     docRefs: [
-      { file: 'docs/architecture/DECISIONS-resource-views.md', note: 'V1–V10 — the ResourceView template, the narrowing rule, and the WET quarantine.' },
+      { file: 'docs/architecture/DECISIONS-resource-views.md', note: '[deleted from the repo Oct 25 — snapshot in the Docs tab] V1–V10 — the ResourceView template, the narrowing rule, and the WET quarantine.' },
       { file: 'docs/architecture/MODULE-STRUCTURE.md', note: '§1–§3 — what module.json declares and the three registries a module writes into.' },
-      { file: 'docs/CREAM-PIE.md', note: 'The "Guesser" inspiration and the ResourceView / Rendering Engine sketch.' },
+      { file: 'docs/CREAM-PIE.md', note: '[deleted from the repo Oct 25 — snapshot in the Docs tab] The "Guesser" inspiration and the ResourceView / Rendering Engine sketch.' },
     ],
     activity: {
       kind: 'uimock',

@@ -242,8 +242,8 @@ export const ADVANCED_LEVELS: Level[] = [
       { icon: '🔁', discipline: 'Distributed systems', term: 'Fail closed', body: 'When a gate cannot evaluate, deny. Fail-open on a delivery gate is how a customer gets an email they were excluded from (C10).' },
     ],
     docRefs: [
-      { file: 'docs/architecture/DECISIONS-resource-views.md', note: 'V1, V5, V6, V7, V9, V10.' },
-      { file: 'docs/LOADED-CREAM-PIE-STRATEGY.md', note: '§3 decisions C1–C20, especially C2, C3, C10, C19.' },
+      { file: 'docs/architecture/DECISIONS-resource-views.md', note: '[deleted from the repo Oct 25 — snapshot in the Docs tab] V1, V5, V6, V7, V9, V10.' },
+      { file: 'docs/LOADED-CREAM-PIE-STRATEGY.md', note: '[deleted from the repo Oct 25 — snapshot in the Docs tab] §3 decisions C1–C20, especially C2, C3, C10, C19.' },
     ],
     activity: {
       kind: 'verdict',

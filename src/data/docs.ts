@@ -35,6 +35,8 @@ export interface Doc {
   color: string;
   /** source path in the ci-connect repo */
   source: string;
+  /** Set when the file no longer exists on stage; the content is a historical snapshot. */
+  removed?: { date: string; commit: string; note: string };
   sections: DocSection[];
 }
 
@@ -563,6 +565,7 @@ Worked on \`helpdeskTicketStage\`: \`filterWidget: tab-strip\` replaces the impl
     icon: '🗃️',
     color: 'var(--orange-l)',
     source: 'docs/architecture/DECISIONS-resource-views.md',
+    removed: { date: '2026-10-25', commit: '7c34c5b50a', note: 'Deleted with the dated decision records. The decisions it describes (template ceiling, saved views as the user tier of recipes, no shadowing, WET aliases) are still how the code behaves; V-numbers survive as labels in code comments.' },
     sections: [
       {
         id: 'rv-intro',
@@ -780,6 +783,7 @@ apps/synapse-v3/src/
     icon: '🍰',
     color: 'var(--purple)',
     source: 'docs/CREAM-PIE.md',
+    removed: { date: '2026-10-25', commit: '7c34c5b50a', note: 'The original vision, deleted as a dated document. The living reference is docs/architecture/CREAM-PIE.md, which keeps the C and D numbers as labels.' },
     sections: [
       {
         id: 'cp-abstract',
@@ -1054,6 +1058,7 @@ Examples:
     icon: '🚀',
     color: 'var(--green)',
     source: 'docs/LOADED-CREAM-PIE-STRATEGY.md',
+    removed: { date: '2026-10-25', commit: '7c34c5b50a', note: 'The 2026-09 consolidation plan (C1–C28), deleted as a dated document once executed. C-numbers survive as labels (e.g. C10 in subscriberExecutionService.ts); see docs/architecture/CREAM-PIE.md.' },
     sections: [
       {
         id: 'lcp-finding',
@@ -1168,6 +1173,7 @@ All values are **item keys** as the seeder slugifies them (\`'In Progress'\` →
     icon: '🔱',
     color: 'var(--yellow)',
     source: 'docs/architecture/ERP-PRIMITIVES.md',
+    removed: { date: '2026-10-25', commit: '7c34c5b50a', note: 'Archived on Oct 24, then deleted with the archive on Oct 25.' },
     sections: [
       {
         id: 'ep-intro',
