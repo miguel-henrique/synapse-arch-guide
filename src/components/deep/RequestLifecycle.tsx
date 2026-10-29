@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Callout, Files, Section } from '../kit/Kit';
 
 // Step through the real middleware chain of the generic route
-// (apps/web-services/src/routes/apiRoutes.ts) with the Vendors & Partners
+// (apps/web-services/src/routes/genericCrudChain.ts) with the Vendors & Partners
 // request, watching req.prismaQuery take shape.
 
 interface Mw {
@@ -67,11 +67,11 @@ const CHAIN: Mw[] = [
   },
   {
     name: 'siteScopedOrgFilter',
-    file: 'middleware/tenantScope.ts',
+    file: 'middleware/siteScopedOrgFilter.ts → utils/tenantScope.ts',
     kind: 'scope',
-    does: 'Tenant scope for constrained (non-staff) callers: a where on organizationId (or a derived parent) is put on the query BEFORE any user filter, so later filters can only narrow it. Staff are not constrained.',
-    forThisRequest: 'Staff caller → no tenant where. (A client user would get organizationId = their org here.)',
-    state: 'req.prismaQuery.where = { }          // staff\n// client: { organizationId: <their org> }',
+    does: 'Tenant scope for constrained (non-staff) callers, in TWO layers. (1) Application: a where on organizationId (or a derived parent) is put on the query BEFORE any user filter, so later filters can only narrow it. (2) Database (new on stage, migration 20261231900000_tenant_row_level_security): the same scope is recorded on the request (req.tenantRls) so the query later runs as the PostgreSQL role ci_tenant, where row-level-security policies hide every other tenant\'s rows even if the application filter were wrong. Staff are not constrained by either.',
+    forThisRequest: 'Staff caller → no tenant where, no RLS scope. (A client user would get organizationId = their org here, and their org ids in req.tenantRls.)',
+    state: 'req.prismaQuery.where = { }          // staff\n// client: { organizationId: <their org> }\n// client: req.tenantRls = { organizationIds: {<their org>}, siteKeys, emails }',
   },
   {
     name: 'nestedRouteParentScope · subjectPathFilterMiddleware',
@@ -125,9 +125,9 @@ const CHAIN: Mw[] = [
   },
   {
     name: 'controller (controllerFactory → findMany + count)',
-    file: 'routes/apiRoutes.ts:327+',
+    file: 'routes/genericCrudChain.ts (last handler) → controllerFactory',
     kind: 'handler',
-    does: 'Runs prisma.lead.findMany(req.prismaQuery) and a count with the same where, enriches rows with the requested lists, redacts sensitive fields, and answers with the envelope.',
+    does: 'Runs prisma.lead.findMany(req.prismaQuery) and a count with the same where, enriches rows with the requested lists, redacts sensitive fields, and answers with the envelope. For a tenant-constrained request, getPrismaClient(req) wraps every operation in a transaction that first runs set_config(\'role\', \'ci_tenant\', true) and sets app.tenant_org_ids / app.tenant_site_keys / app.tenant_emails, so PostgreSQL row-level security enforces the scope a second time.',
     forThisRequest: '19 rows today (18 vendor + 1 partner leads in production, minus any in hidden stages).',
     state: '{ data: [ …rows ], meta: { pagination: { page: 1, pageSize: 100, total: … } } }',
   },
@@ -144,7 +144,7 @@ export default function RequestLifecycle() {
       intro={
         <p>
           Every list screen in synapse-v3 calls the same generic route. Step through the real chain
-          (in the order it is mounted in <code>apiRoutes.ts</code>) with the request your browser sent
+          (in the order it is declared in <code>routes/genericCrudChain.ts</code>) with the request your browser sent
           for <em>Vendors &amp; Partners</em>, and watch the Prisma query take shape. The order
           matters: scope is applied <em>before</em> any user filter, so a filter can only narrow.
         </p>
@@ -192,12 +192,37 @@ export default function RequestLifecycle() {
         (doctrine §4) is literally this AND.
       </Callout>
 
+      <Callout kind="real" title="New this week: a second, database-level tenant wall">
+        <p>
+          Until Oct 2026 tenant isolation lived only in application code. Stage now adds PostgreSQL{' '}
+          <strong>row-level security</strong>: a NOLOGIN role <code>ci_tenant</code>, policies on every tenant-owned
+          table keyed on <code>app.tenant_org_ids</code> / <code>app.tenant_site_keys</code> / <code>app.tenant_emails</code>,
+          and a role switch local to each transaction of a constrained request (<code>withTenantRls</code>). "The
+          application decides WHEN a request is scoped; the database decides WHAT that scope can see." A missing
+          application filter now returns no foreign rows instead of another tenant's data.
+        </p>
+        <p>
+          Not covered, by design: staff and system requests (every role except <code>ci_tenant</code> matches a bypass
+          policy), raw SQL on the scoped client, and a database restored into a cluster without the{' '}
+          <code>ci_tenant</code> role (the service then logs an error and enforces the application scope only).
+        </p>
+      </Callout>
+
+      <Callout kind="info" title="The same chain now also serves anonymous reads">
+        <code>modules/onboarding/publicReferenceReads.ts</code> mounts this exact chain for unauthenticated GETs of
+        platform reference data (decks, catalog products, platforms, industries, lists) used by the onboard wizard,
+        with a fixed read-only ability, a smaller page cap and per-IP rate limits. One chain means a guard added here
+        covers both — and a regression here affects both.
+      </Callout>
+
       <Files
         items={[
-          { path: 'apps/web-services/src/routes/apiRoutes.ts:294-335', note: 'the chain, in mount order' },
+          { path: 'apps/web-services/src/routes/genericCrudChain.ts', note: 'the chain, in order (apiRoutes.ts mounts it)' },
+          { path: 'libs/prisma/src/utils/tenantRls.ts', note: 'withTenantRls — the database half of tenant isolation' },
+          { path: 'libs/prisma/src/schema/migrations/20261231900000_tenant_row_level_security', note: 'ci_tenant role + policies' },
           { path: 'apps/web-services/src/modules/cream-pie/viewFilter.ts', note: 'recipe + when → where; narrowWhere' },
           { path: 'libs/cream-pie/src/lib/prisma-where.ts:494-504', note: 'narrowWhere — the AND' },
-          { path: 'apps/web-services/src/middleware/tenantScope.ts', note: 'tenant scope for constrained callers' },
+          { path: 'apps/web-services/src/utils/tenantScope.ts', note: 'tenant scope for constrained callers (moved from middleware/)' },
         ]}
       />
     </Section>

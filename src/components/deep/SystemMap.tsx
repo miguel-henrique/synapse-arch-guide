@@ -53,7 +53,7 @@ const nodes: DiagramNode[] = [
         <p>See the <strong>Request Lifecycle</strong> tab for each middleware in order.</p>
       </>
     ),
-    files: ['apps/web-services/src/routes/apiRoutes.ts:294-335', 'apps/web-services/src/middleware/orm.ts', 'apps/web-services/src/modules/cream-pie/viewFilter.ts'],
+    files: ['apps/web-services/src/routes/genericCrudChain.ts', 'apps/web-services/src/middleware/orm.ts', 'apps/web-services/src/modules/cream-pie/viewFilter.ts'],
   },
   {
     id: 'synapseapi', x: 318, y: 170, w: 186, h: 70, label: '/api/v1/synapse/*', sub: 'navigation · lists · recipes\nperspectives · saved-views', color: 'var(--purple-l)',
@@ -89,7 +89,7 @@ const nodes: DiagramNode[] = [
   {
     id: 'prbac', x: 318, y: 516, w: 186, h: 84, label: 'libs/prbac · libs/auth', sub: 'CASL abilities\nJWT org context', color: 'var(--teal)',
     detail: <p>Polymorphic RBAC: capability = action + subject + organization context + condition. Abilities are built per user; menu subjects (<code>sales.leads</code>) are RBAC subjects too, which is why nav ids are permanent and renamed via <code>formerIds</code>.</p>,
-    files: ['libs/prbac', 'apps/web-services/src/middleware/caslGenericAuth.ts', 'apps/web-services/src/middleware/tenantScope.ts'],
+    files: ['libs/prbac', 'apps/web-services/src/middleware/caslGenericAuth.ts', 'apps/web-services/src/utils/tenantScope.ts', 'libs/prisma/src/utils/tenantRls.ts'],
   },
   {
     id: 'mtel', x: 524, y: 516, w: 186, h: 84, label: 'libs/mtel · libs/types', sub: 'merge-tag expressions\nshared TS types', color: 'var(--teal)',
@@ -125,8 +125,8 @@ const nodes: DiagramNode[] = [
   },
   {
     id: 'domain', x: 770, y: 522, w: 294, h: 78, label: 'Domain tables', sub: 'leads · organizations · contacts\nprojects · backups …', color: 'var(--green)',
-    detail: <p>Ordinary tables. A list-bound column (e.g. <code>leads.status</code>) stores the ListItem <em>key</em> (<code>"contacted"</code>) — so the column and the List must agree. Production currently has a few lead statuses no List knows (<code>partner_referral</code>, <code>Converted</code>, <code>contact</code>) — see Questions.</p>,
-    files: ['libs/prisma/src/schema/organization/Lead.prisma'],
+    detail: <p>Ordinary tables — now with <strong>row-level security</strong> on every tenant-owned table: a constrained request runs as role <code>ci_tenant</code> and only sees rows in its scope. A list-bound column (e.g. <code>leads.status</code>) stores the ListItem <em>key</em> (<code>"contacted"</code>) — so the column and the List must agree. A <code>list_slot__&lt;col&gt;</code> trigger refuses a value that is not a key of the List (HTTP 400). Production still held a few lead statuses no List knows — see Questions.</p>,
+    files: ['libs/prisma/src/schema/organization/Lead.prisma', 'libs/prisma/src/schema/migrations/20261231900000_tenant_row_level_security', 'docs/database/row-level-security.md'],
   },
 ];
 
@@ -187,8 +187,9 @@ export default function SystemMap() {
       <Callout kind="info" title="Version note">
         File paths and line numbers in this guide were read from <code>ci-connect</code> at{' '}
         <code>origin/stage</code> (<code>0ca89c748</code>, Oct 2026) and re-checked against{' '}
-        <code>403b0800f4</code> a week later (the Infrastructure, Leads and campaign-resolver findings
-        still hold; the pageSize cap has since landed). Lines drift; search by the symbol name if a
+        <code>403b0800f4</code> a week later. Since then stage added tenant row-level security, capped page size at
+        1000, moved the generic chain to <code>routes/genericCrudChain.ts</code> and deleted four of the architecture
+        docs (marked in the Docs tab); the Infrastructure, Leads and campaign-resolver findings still hold. Lines drift; search by the symbol name if a
         number is off.
       </Callout>
     </Section>

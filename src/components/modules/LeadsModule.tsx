@@ -28,7 +28,7 @@ const nodes: DiagramNode[] = [
     detail: <><p>The production-safe system seed. It upserts every declared List and ListItem by key and <strong>owns</strong> the item columns <code>label, value, position, color, icon, isDefault, isInitial, isTerminal, system, metadata</code> — but not <code>isActive</code>.</p><p>Consequence: relabelling a manifest-declared item in the Lists admin is reverted on the next seed. Items an admin adds that are NOT in the manifest are left alone.</p></>,
     files: ['libs/prisma/src/seeders/modules/seed-crm.system.ts', 'libs/prisma/src/seeders/modules/_moduleSeeder.ts:37-50, 163-210'] },
   { id: 'view', x: 32, y: 430, w: 222, h: 90, label: 'resourceViews/leads.ts', sub: 'LEADS_VIEW template\nhideClosedStages · defaultWhen\nfixedWhen (org 496) · columns', color: 'var(--orange-l)',
-    detail: <p>The presentation template for the leads grid: columns, default sort, which stages are hidden by default, the Lead-type dropdown, the Campaign picker, bulk-edit fields, the "Merge leads…" bulk action, and the pinned <code>organizationId = 496</code>. It is frontend code, not a manifest row.</p>,
+    detail: <><p>The presentation template for the leads grid: columns, default sort, which stages are hidden by default, the Lead-type dropdown, the Campaign picker, bulk-edit fields, the "Merge leads…" and (new this week) "Link to event…" bulk actions, a tags column, and the pinned <code>organizationId = 496</code>. It is frontend code, not a manifest row.</p><p>"Link to event…" writes campaign <em>membership edges</em> for the selected leads — the second linkage the campaign filter has to reconcile (Deep Dives → Relationships).</p></>,
     files: ['apps/synapse-v3/src/components/entity-list/resourceViews/leads.ts', 'apps/synapse-v3/src/components/entity-list/resourceViewRegistry.ts:26,33'] },
   { id: 'leadprisma', x: 32, y: 540, w: 222, h: 60, label: 'Lead.prisma', sub: 'columns · indexes · campaignId', color: 'var(--orange-l)',
     detail: <p>The hand-written model the manifest adopts. <code>organizationId</code> enrolls the model in generic-API tenant scoping; <code>campaignId</code> is the stringified campaign id stamped by QR capture and imports.</p>,
@@ -40,14 +40,14 @@ const nodes: DiagramNode[] = [
     detail: <p>The four recipes with <code>primaryResource: "leads"</code>. On stage they are items of list <code>creamPieRecipe</code> (Schema B). Each one is a perspective of the Leads screen, reachable as <code>?recipe=&lt;slug&gt;</code>.</p> },
   { id: 'navrows', x: 302, y: 276, w: 230, h: 70, label: 'Navigation items', sub: 'sales (Workspace)\n├ sales.leads (Item, /leads)\n└ sales.vendors-partners (CreamPie)', color: 'var(--green)',
     detail: <p>The menu nodes. <code>sales.leads</code> is an Item with a route and a <code>primaryResource</code>, so it grows the perspectives accordion. <code>sales.vendors-partners</code> is a sibling CreamPie node over the same recipe — the duplicate you noticed.</p> },
-  { id: 'leadsT', x: 302, y: 366, w: 230, h: 88, label: 'leads table', sub: '1,472 CI Web Group leads (org 496)\n10,012 client-website leads\nstatus / lead_type store item keys', color: 'var(--green)',
+  { id: 'leadsT', x: 302, y: 366, w: 230, h: 88, label: 'leads table', sub: '1,472 CI Web Group leads (org 496)\n10,012 client-website leads\nstatus / lead_type: trigger-checked keys', color: 'var(--green)',
     detail: <><p>One table for two populations: CI Web Group's own pipeline and the leads every client website captures. That is why the Leads view pins <code>organizationId = 496</code>.</p><p>Columns store the ListItem <strong>key</strong>: <code>status = "contacted"</code>, <code>lead_type = "vendor"</code>.</p></> },
   { id: 'adminui', x: 302, y: 478, w: 230, h: 70, label: 'Lists admin UI', sub: '/backoffice/admin/lists', color: 'var(--blue)',
     detail: <p>Edits the List/ListItem rows directly (no deploy). Good for adding values; risky for relabelling manifest-declared values (the next seed wins). Real example: someone added the leadType items <code>"List"</code> and <code>"Employment Application"</code> here on Oct 19–20.</p>,
     files: ['apps/synapse-v3/src/components/backoffice/lists/ListsView.tsx'] },
 
   { id: 'route', x: 580, y: 56, w: 204, h: 70, label: 'GET /api/v1/leads', sub: 'generic smart route\n(no leads controller)', color: 'var(--purple-l)',
-    detail: <p>Leads use the same catch-all route as every model. See Deep Dives → Request Lifecycle.</p>, files: ['apps/web-services/src/routes/apiRoutes.ts:294-335'] },
+    detail: <p>Leads use the same catch-all route as every model. See Deep Dives → Request Lifecycle.</p>, files: ['apps/web-services/src/routes/genericCrudChain.ts'] },
   { id: 'vf', x: 580, y: 146, w: 204, h: 90, label: 'viewFilterMiddleware', sub: 'resolve ?recipe= (tiers)\navailableWhen → 403\nAND when[] → compile', color: 'var(--purple-l)',
     detail: <p>Looks the recipe up (platform → org → user), enforces <code>availableWhen</code>, binds <code>{'{{user.id}}'}</code>, ANDs recipe + <code>when[]</code> and narrows the scope.</p>, files: ['apps/web-services/src/modules/cream-pie/viewFilter.ts:89-190'] },
   { id: 'lf', x: 580, y: 256, w: 204, h: 64, label: 'listFilterMiddleware', sub: '?lists= → hydrate labels', color: 'var(--purple-l)',
@@ -282,8 +282,11 @@ export default function LeadsModule() {
         <Callout kind="real" title="Two things production shows that the code does not">
           <p>
             <strong>3 leads carry statuses outside the List</strong> (<code>partner_referral</code>,{' '}
-            <code>Converted</code> with a capital C, <code>contact</code>). The column is a plain string, so
-            nothing stopped them. They match no stage tab.
+            <code>Converted</code> with a capital C, <code>contact</code>). They match no stage tab. The schema does
+            guard the column: a <code>list_slot__status</code> trigger (<code>enforce_list_slot('status', 'leadStatus')</code>)
+            rejects any value that is not a key of the platform leadStatus list. But it only checks a value when it is
+            written or changed, so these rows most likely predate the trigger on production. Stage also guards{' '}
+            <code>lead_type</code>, <code>lead_origin</code>, <code>customer_type</code> and <code>source</code> the same way.
           </p>
           <p>
             <strong>Production is behind stage:</strong> stage's manifest also declares a terminal{' '}
