@@ -1,5 +1,12 @@
 import { useState } from 'react';
 import './CoursePage.css';
+import { Accordion } from '../components/kit/Kit';
+import { ADVANCED_LEVELS } from '../course/advancedLevels';
+import { COURSE_FAQ } from '../course/faq';
+import SemijoinGame, { type SemijoinActivity } from '../course/games/SemijoinGame';
+import TransformGame, { type TransformActivity } from '../course/games/TransformGame';
+import UrlSourceGame, { type UrlSourceActivity } from '../course/games/UrlSourceGame';
+import VerdictGame, { type VerdictActivity } from '../course/games/VerdictGame';
 
 const PROGRESS_KEY = 'sag_course_progress_v2';
 
@@ -30,7 +37,12 @@ interface DocRef {
   note: string;            // what to read there
 }
 
-type ActivityType =
+export type ActivityType =
+  // Advanced games (levels 7+), implemented in src/course/games
+  | SemijoinActivity
+  | TransformActivity
+  | UrlSourceActivity
+  | VerdictActivity
   | { kind: 'sort'; prompt: string; items: { id: string; label: string; bucket: string }[]; buckets: { id: string; label: string; color: string }[] }
   | { kind: 'match'; prompt: string; pairs: { term: string; def: string }[] }
   | { kind: 'build'; prompt: string; slots: { id: string; label: string; options: string[]; correct: string }[] }
@@ -62,7 +74,7 @@ type ActivityType =
       lessonText: string;
     };
 
-interface Level {
+export interface Level {
   id: number;
   title: string;
   subtitle: string;
@@ -79,7 +91,7 @@ interface Level {
   questions: Question[];
 }
 
-const LEVELS: Level[] = [
+const BASE_LEVELS: Level[] = [
   // ── LEVEL 1 ──────────────────────────────────────────────────────────────
   {
     id: 1,
@@ -760,6 +772,8 @@ const LEVELS: Level[] = [
   },
 ];
 
+const LEVELS: Level[] = [...BASE_LEVELS, ...ADVANCED_LEVELS];
+
 // ─────────────────────────────────────────────────────────────────────────────
 // ACTIVITY COMPONENTS
 // ─────────────────────────────────────────────────────────────────────────────
@@ -1107,6 +1121,10 @@ function ActivityRouter({ activity, onComplete }: { activity: ActivityType; onCo
   if (activity.kind === 'graph') return <GraphActivity activity={activity} onComplete={onComplete} />;
   if (activity.kind === 'query') return <QueryActivity activity={activity} onComplete={onComplete} />;
   if (activity.kind === 'uimock') return <UiMockActivity activity={activity} onComplete={onComplete} />;
+  if (activity.kind === 'semijoin') return <SemijoinGame activity={activity} onComplete={onComplete} />;
+  if (activity.kind === 'transform') return <TransformGame activity={activity} onComplete={onComplete} />;
+  if (activity.kind === 'urlsource') return <UrlSourceGame activity={activity} onComplete={onComplete} />;
+  if (activity.kind === 'verdict') return <VerdictGame activity={activity} onComplete={onComplete} />;
   return null;
 }
 
@@ -1447,6 +1465,10 @@ function activityMeta(kind: ActivityType['kind']): string {
     case 'graph': return '🕸️ Graph';
     case 'query': return '🔍 Query';
     case 'uimock': return '🖥️ Live UI';
+    case 'semijoin': return '🔎 Predict';
+    case 'transform': return '🧮 Puzzle';
+    case 'urlsource': return '🔗 Decode';
+    case 'verdict': return '⚖️ Referee';
     default: return '🎮 Practice';
   }
 }
@@ -1653,6 +1675,10 @@ export default function CoursePage() {
                 level.activity.kind === 'graph' ? 'Explore the relationship graph' :
                 level.activity.kind === 'query' ? 'Build a CREAM-PQL query' :
                 level.activity.kind === 'uimock' ? 'Drive a live Synapse view' :
+                level.activity.kind === 'semijoin' ? 'Predict the matching rows' :
+                level.activity.kind === 'transform' ? 'Shape the payload' :
+                level.activity.kind === 'urlsource' ? 'Who wrote this parameter?' :
+                level.activity.kind === 'verdict' ? (level.activity.role === 'Triage' ? 'Triage the requests' : 'Referee the decisions') :
                 'Trace the flow'
               }</h3>
             </div>
@@ -1739,6 +1765,17 @@ export default function CoursePage() {
             )}
           </div>
         )}
+
+        {/* ── FAQ — shown under every phase ── */}
+        {COURSE_FAQ[level.id] && (
+          <section className="course__faq">
+            <div className="course__faq-head">
+              <h3>❔ FAQ — Level {level.id}</h3>
+              <span>Questions people ask when this level clicks (or doesn't)</span>
+            </div>
+            <Accordion items={COURSE_FAQ[level.id]!} />
+          </section>
+        )}
       </div>
     );
   }
@@ -1752,9 +1789,9 @@ export default function CoursePage() {
         <div className="section__label">Learning Mode</div>
         <h1 className="section__title">Synapse Architecture Course</h1>
         <p className="section__desc">
-          6 levels. Each has an introduction with cross-disciplinary context (databases, data
+          {LEVELS.length} levels. Each has an introduction with cross-disciplinary context (databases, data
           structures, software architecture), a hands-on interactive activity, and a knowledge
-          check. Every level links to the source documentation it draws from. Complete 67%+ of
+          check, plus an FAQ. Every level links to the source documentation it draws from. Complete 67%+ of
           the quiz to pass a level. Progress is saved in this session.
         </p>
         <div className="course__progress-bar-container">
