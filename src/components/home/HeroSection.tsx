@@ -88,6 +88,9 @@ export default function HeroSection({ setPage }: { setPage: (p: Page) => void })
                 <path d="M5 12h14M12 5l7 7-7 7"/>
               </svg>
             </button>
+            <button className="hero__cta hero__cta--secondary" onClick={() => setPage('deepdives')}>
+              Deep Dives &amp; diagrams
+            </button>
             <button className="hero__cta hero__cta--secondary" onClick={scrollToArch}>
               Explore Architecture
             </button>

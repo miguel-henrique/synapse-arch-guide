@@ -186,8 +186,10 @@ export default function SystemMap() {
 
       <Callout kind="info" title="Version note">
         File paths and line numbers in this guide were read from <code>ci-connect</code> at{' '}
-        <code>origin/stage</code> (<code>0ca89c748</code>, Oct 2026). Lines drift; search by the
-        symbol name if a number is off.
+        <code>origin/stage</code> (<code>0ca89c748</code>, Oct 2026) and re-checked against{' '}
+        <code>403b0800f4</code> a week later (the Infrastructure, Leads and campaign-resolver findings
+        still hold; the pageSize cap has since landed). Lines drift; search by the symbol name if a
+        number is off.
       </Callout>
     </Section>
   );

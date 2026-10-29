@@ -51,13 +51,13 @@ export const QUESTIONS: Question[] = [
     id: 'S2',
     component: 'CREAM-PQL & generic API',
     kind: 'security',
-    severity: 'medium',
+    severity: 'low',
     evidence: 'verified',
-    title: 'No upper bound on pageSize',
+    title: 'pageSize is now capped at 1000 — is that low enough?',
     detail:
-      '`orm.ts` parses `pageSize` with `parseInt` and `parsePagination` multiplies it straight into `take` — no clamp. `pageSize=1000000` on `/api/v1/leads` asks Postgres for every row, enriches each with six vocabularies and populates two relations. That is both a cheap DoS and a one-request bulk export for anyone with read access.',
-    ask: 'Clamp `take` (e.g. 200, as the MCP does) and make exports an explicit, audited action?',
-    files: ['apps/web-services/src/middleware/orm.ts:1114-1122', 'libs/prisma/src/parsers/query.ts:725-733'],
+      '**Update:** stage commit `9c0925a9ac` ("cap generic list pageSize at 1000") added `MAX_PAGE_SIZE = 1000` in `utils/queryParams.ts`, read by `parseListPagination` in `orm.ts`. Before it, `pageSize=1000000` pulled a whole table with populated relations in one request. 1000 rows × six hydrated vocabularies × two populated relations is still a heavy response, and paging through every row remains a bulk export for anyone with read access.',
+    ask: 'Is 1000 the intended ceiling for every model (the MCP caps at 200), and should full exports be an explicit, audited action?',
+    files: ['apps/web-services/src/utils/queryParams.ts', 'apps/web-services/src/middleware/orm.ts:674-678'],
   },
   {
     id: 'S3',
