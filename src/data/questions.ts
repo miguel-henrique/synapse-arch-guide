@@ -43,7 +43,7 @@ export const QUESTIONS: Question[] = [
     evidence: 'suspected',
     title: 'Can when[…] filter on secret columns (a boolean oracle)?',
     detail:
-      '`utils/sensitiveFields.ts` keeps a deny list (User.password, resetToken, Credential.secretHash, HostingProvider.password…) and `isUnqueryableField` enforces it in the typed-kind query path, the MCP gateway and populate scoping. The CREAM-PQL field resolver (`buildFieldResolver`) and `whenRuleFilter` do **not** call it: they accept any DMMF scalar at any relation depth. If so, `?when[resetToken][startsWith]=a` (or `when[user.password][startsWith]=$2b$10$a` from a model related to User) compiles to a Prisma `where`. The column is redacted in the response, but the **row count** answers yes/no — enough to extract a value character by character. A live reset token is redeemable. Exposure depends on which callers can list a model with a path to User (CASL and tenant scope may hide it). Note: the Schema-B auth review proves `filters[roles]` is refused — a separate guard for the legacy `?filters=` path, not for `when[]`.',
+      '`utils/sensitiveFields.ts` keeps a deny list (User.password, resetToken, Credential.secretHash, HostingProvider.password…) and `isUnqueryableField` enforces it in the typed-kind query path, the MCP gateway and populate scoping. The CREAM-PQL field resolver (`buildFieldResolver`) and `whenRuleFilter` do **not** call it: they accept any DMMF scalar at any relation depth. If so, `?when[resetToken][startsWith]=a` (or `when[user.password][startsWith]=$2b$10$a` from a model related to User) compiles to a Prisma `where`. The column is redacted in the response, but the **row count** answers yes/no — enough to extract a value character by character. A live reset token is redeemable. Exposure depends on which callers can list a model with a path to User (CASL and tenant scope may hide it; for constrained callers the new row-level security also limits the oracle to rows in their own tenant, but staff are not constrained). Re-checked on stage `403b0800f4`: `fieldResolver.ts` was trimmed (dead exports removed) but still never calls `isUnqueryableField`. Note: the Schema-B auth review proves `filters[roles]` is refused — a separate guard for the legacy `?filters=` path, not for `when[]`.',
     ask: 'Should `buildFieldResolver` return null for `isUnqueryableField` paths (every hop), so the compiler fails closed with 422? Is there a CASL-matrix cell for `when[…]` on sensitive fields?',
     files: ['apps/web-services/src/modules/cream-pie/fieldResolver.ts:234-375', 'apps/web-services/src/modules/cream-pie/viewFilter.ts:466-477', 'apps/web-services/src/utils/sensitiveFields.ts:46-111'],
   },
@@ -75,13 +75,13 @@ export const QUESTIONS: Question[] = [
     id: 'S4',
     component: 'Tenancy & RBAC',
     kind: 'security',
-    severity: 'medium',
-    evidence: 'suspected',
-    title: 'Where exactly can tenant scope be missing?',
+    severity: 'low',
+    evidence: 'verified',
+    title: 'Tenant scope now has a database backstop — what does it still not cover?',
     detail:
-      'CASL abilities "carry no organization conditions" (`caslGenericAuth.ts:19-21`); tenant scope is added by `tenantScope.ts` "only on LIST reads, and only when the header…", is skipped for staff and for `SITE_ORG_FILTER_EXCLUDED_MODELS`, and models without `organizationId` rely on a hand-maintained `DERIVED_TENANT_PARENTS` map. A new model that has neither is, by construction, unscoped for constrained callers. The Schema-B review also stopped the UserOrganizationAccess fold because scope could not be kept provably identical.',
-    ask: 'Is there a CI check that every model reachable by a constrained caller is either org-scoped, derived-scoped, or explicitly excluded with a reason?',
-    files: ['apps/web-services/src/middleware/tenantScope.ts:6, 105, 131, 186', 'docs/security/schema-b-auth-review.md'],
+      '**Update (stage, Oct 2026):** migration `20261231900000_tenant_row_level_security` adds PostgreSQL row-level security. A constrained request runs its generic-API operations as the NOLOGIN role `ci_tenant` with `app.tenant_org_ids` / `app.tenant_site_keys` / `app.tenant_emails` set for the transaction (`withTenantRls`), and policies on the tenant-owned tables hide every other tenant\'s rows. That closes the original worry here — a model missing from `DERIVED_TENANT_PARENTS` or a wrong application filter now returns no foreign rows. What stays outside it, by design: staff and system requests (every role other than `ci_tenant` matches the `tenant_rls_bypass` policy), raw SQL on the scoped client, tables RLS was not enabled on, and a restore into a cluster without the `ci_tenant` role, where the service logs an error and falls back to the application scope only.',
+    ask: 'Is there an alert (not just a log line) when the RLS role is missing and the service falls back to application-only scope? And which tables are deliberately left without RLS?',
+    files: ['libs/prisma/src/utils/tenantRls.ts', 'libs/prisma/src/schema/migrations/20261231900000_tenant_row_level_security/migration.sql', 'apps/web-services/src/utils/tenantScope.ts', 'docs/database/row-level-security.md'],
   },
   {
     id: 'S5',
@@ -103,7 +103,7 @@ export const QUESTIONS: Question[] = [
     evidence: 'verified',
     title: 'The organization-496 pin is presentation, not access control',
     detail:
-      'Leads are pinned to CI Web Group via `LEADS_VIEW.fixedWhen` in the browser. The leads table also holds ~10,000 client-website leads (observed). Any caller allowed to read `leads` who calls the API without that `when` gets the other tenants\' leads unless tenant scope applies to them — staff are not tenant-scoped. Likely intended for staff, but it is worth stating explicitly.',
+      'Leads are pinned to CI Web Group via `LEADS_VIEW.fixedWhen` in the browser. The leads table also holds ~10,000 client-website leads (observed). Any caller allowed to read `leads` who calls the API without that `when` gets the other tenants\' leads unless tenant scope applies to them — staff are not tenant-scoped, and the new row-level security does not change that (staff requests bypass it by design). Likely intended for staff, but it is worth stating explicitly.',
     ask: 'Is "every staff user can read every client\'s leads through the API" the intended policy? If not, the pin belongs in an ability condition, not a view template.',
     files: ['apps/synapse-v3/src/components/entity-list/resourceViews/leads.ts:114-123', 'apps/synapse-v3/src/config/ciWebGroup.ts'],
   },
@@ -165,19 +165,20 @@ export const QUESTIONS: Question[] = [
     evidence: 'observed',
     title: 'Admin-created keys are not slugs — and are about to collide',
     detail:
-      'Production leadType has admin-created items with keys `"List"` and `"Employment Application"` (capitals, a space). 22 leads already store `lead_type = "List"`. Stage\'s manifest adds its own item `employment` labelled "Employment Application". After the next seed there will be two values with one label and different keys.',
+      'Production leadType has admin-created items with keys `"List"` and `"Employment Application"` (capitals, a space). 22 leads already store `lead_type = "List"`. Stage\'s manifest adds its own item `employment` labelled "Employment Application". After the next seed there will be two values with one label and different keys. The list-slot trigger does not help here: both keys exist in the List, so both are valid values.',
     ask: 'Validate keys as slugs in the Lists admin (`^[a-z][a-z0-9_]*$`), and reconcile `"Employment Application"` → `employment` before deploying?',
   },
   {
     id: 'G3',
     component: 'Lists & vocabulary',
     kind: 'data',
-    severity: 'medium',
+    severity: 'low',
     evidence: 'observed',
-    title: 'List-bound columns accept values the List does not know',
+    title: 'Production holds lead statuses the List does not know',
     detail:
-      '`leads.status` is a plain string. Production holds `partner_referral`, `Converted` (capital C) and `contact` on CI Web Group leads — none are leadStatus keys, so those leads match no stage tab and no transition. Nothing at the DB level ties the column to ListItem keys.',
-    ask: 'Add a check (trigger or periodic report) that every list-bound column value is an active key of its List, and a cleanup for the existing orphans?',
+      'Production (read-only MCP, Oct 22) holds `partner_referral`, `Converted` (capital C) and `contact` on CI Web Group leads — none are leadStatus keys, so those leads match no stage tab and no transition. **Correction to an earlier version of this item:** the schema does tie the column to the List. A `list_slot__status` trigger (`enforce_list_slot(\'status\', \'leadStatus\')`) refuses any written value that is not a key of the platform list (HTTP 400, SQLSTATE LS001), and `lead_type`, `lead_origin`, `customer_type` and `source` are guarded the same way. But the trigger only checks a value on INSERT or when it changes on UPDATE, and it checks that the key exists, not that it is active. So rows written before the trigger was installed keep their old values.',
+    ask: 'Does production have the `list_slot__*` triggers on `leads`? If so, a one-off cleanup of the existing orphans; if not, when do they ship?',
+    files: ['libs/prisma/src/schema/migrations/20261101000000_baseline/migration.sql (enforce_list_slot, list_slot__status)', 'docs/database/polymorphic-slots.md'],
   },
   {
     id: 'G4',
@@ -258,7 +259,7 @@ export const QUESTIONS: Question[] = [
     evidence: 'observed',
     title: 'What is actually deployed?',
     detail:
-      'Production differs from stage in ways that matter for debugging: leadStatus has 11 items with only `stageGroup` metadata (stage: 12 with `transitions`, incl. `spam`); `leadIntakeChannel` does not exist in prod; the MCP view returns no `creamPieRecipe` / `navigation` / `savedView` lists (Schema B), and its ListType enum still shows retired STATUS/CATEGORY/TYPE. Reading stage code to explain prod behaviour can mislead.',
+      'Production differs from stage in ways that matter for debugging: leadStatus has 11 items with only `stageGroup` metadata (stage: 12 with `transitions`, incl. `spam`); `leadIntakeChannel` does not exist in prod; the MCP view returns no `creamPieRecipe` / `navigation` / `savedView` lists (Schema B), and its ListType enum still shows retired STATUS/CATEGORY/TYPE. Reading stage code to explain prod behaviour can mislead — and stage moves fast: in one week it gained tenant row-level security, a pageSize cap, status-column list slots for agreements/projects/messages, and deleted four architecture docs.',
     ask: 'Expose the deployed commit + last seed run per module (e.g. in Admin › Modules) so docs and debugging can say which version they describe?',
   },
   {
@@ -332,6 +333,19 @@ export const QUESTIONS: Question[] = [
     ask: 'Fix the doc line (SEEDED-LISTS.md:517)?',
   },
 
+  {
+    id: 'D3',
+    component: 'Docs',
+    kind: 'docs',
+    severity: 'medium',
+    evidence: 'verified',
+    title: 'Four architecture docs were deleted — the onboarding reading list points at nothing',
+    detail:
+      'Stage commit `7c34c5b50a` (Oct 25, "delete the archive and stale docs") removed `docs/CREAM-PIE.md`, `docs/LOADED-CREAM-PIE-STRATEGY.md`, `docs/architecture/DECISIONS-resource-views.md` and `docs/architecture/ERP-PRIMITIVES.md` (history stays in git). `docs/architecture/CREAM-PIE.md` now says the C and D numbers "are kept as labels" and code comments still cite them (C10 in `subscriberExecutionService.ts`, …). Onboarding reading lists written before Oct 25 still name the deleted files as required reading, and the decisions themselves — the template ceiling, the user tier never shadowing — are still how the code behaves.',
+    ask: 'Should the still-binding decisions (V1, V5–V7, V9, V10, C2, C3, C10, C19) be folded into DOCTRINE.md or docs/architecture/CREAM-PIE.md, so a label in a code comment has a living definition?',
+    files: ['docs/architecture/CREAM-PIE.md', 'docs/architecture/DOCTRINE.md'],
+  },
+
   // ── whole architecture ───────────────────────────────────────────────────
   {
     id: 'W1',
@@ -343,6 +357,30 @@ export const QUESTIONS: Question[] = [
     detail:
       'Every model, every list screen and every client go through one middleware chain. That is the architecture\'s strength (one place to secure) and its risk (one regression affects all models). The Schema-B reviews use a 6.2M-cell ability snapshot and a CASL matrix for exactly this reason.',
     ask: 'Does the CASL matrix also cover the read-side query surface — `when[]`, `sort`, `populate`, `lists=` — per role, the way it covers writes?',
+  },
+  {
+    id: 'W4',
+    component: 'CREAM-PQL & generic API',
+    kind: 'security',
+    severity: 'low',
+    evidence: 'verified',
+    title: 'The generic chain is now also reachable anonymously',
+    detail:
+      'New on stage: `modules/onboarding/publicReferenceReads.ts` mounts the same `genericCrudChain` for unauthenticated GETs of platform reference subjects (decks, catalog products, platforms, industries, lists), replacing an API token that shipped in the onboard bundle — a clear improvement. It uses a fixed read-only ability, narrows tenant scope to platform rows, caps page size and rate-limits per IP. The flip side: every `when[…]` / `populate` / `lists=` behaviour of the chain is now exposed to the internet for those subjects, including the field resolver in S1.',
+    ask: 'Is there a test that `when[…]` on a public subject cannot traverse a relation into a non-public model (e.g. a list item → its organization → users)?',
+    files: ['apps/web-services/src/modules/onboarding/publicReferenceReads.ts', 'apps/web-services/src/routes/genericCrudChain.ts'],
+  },
+  {
+    id: 'W5',
+    component: 'Recipes & navigation',
+    kind: 'gap',
+    severity: 'info',
+    evidence: 'verified',
+    title: 'Recipes can now gate any authenticated route (MIDDLEWARE bindings)',
+    detail:
+      'docs/architecture/CREAM-PIE.md §6.4: `installCreamPieRouteGate` puts a gate in front of each of ~1,221 authenticated routes; a `MIDDLEWARE` binding attaches a recipe to a route id (`GET /api/v1/billing/invoices/:id/plan-breakdown`) and the route answers 403 `CREAM_PIE_ROUTE_DENIED` when the recipe does not match. Bindings are tenant-scoped and fail closed. It is the doctrine\'s "one dialect for RBAC injection" made real — and a powerful lever stored as rows.',
+    ask: 'Who may create MIDDLEWARE bindings (they can deny any route to an organization), and are they listed anywhere an operator would look when a route suddenly 403s?',
+    files: ['apps/web-services/src/modules/cream-pie/creamPie.middleware.ts', 'docs/architecture/CREAM-PIE.md §6.4'],
   },
   {
     id: 'W2',

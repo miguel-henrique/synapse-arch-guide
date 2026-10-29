@@ -64,7 +64,7 @@ export const TUTORIALS: Tutorial[] = [
     ],
     pitfalls: [
       'Relabelling only in the admin "works" until the next deploy, then silently reverts.',
-      'Changing the key orphans every lead that stores the old key (they fall out of every tab — like the 3 production leads with `partner_referral`, `Converted`, `contact`).',
+      'Changing the key orphans every lead that stores the old key (they fall out of every tab — like the 3 production leads with `partner_referral`, `Converted`, `contact`), and the `list_slot__status` trigger will then refuse (HTTP 400) any write that still sends the old key.',
     ],
     files: [
       { path: 'modules/crm/module.json:578', note: 'leadStatus' },
@@ -426,7 +426,7 @@ export const TUTORIALS: Tutorial[] = [
       {
         where: 'verify',
         title: 'Walk the usual suspects',
-        body: '1. **Stage hidden?** `when[status][notIn]=…` — click **All**.\n2. **Lead type?** `when[leadType][eq]=prospect` — the dropdown defaults to prospects.\n3. **Org pin?** `organizationId=496` — client-website leads never appear here.\n4. **Unknown value?** its `status` is not a leadStatus key (3 such leads in prod today) — it matches no tab.\n5. **Campaign?** stamped vs attached (see the semijoin playground).',
+        body: '1. **Stage hidden?** `when[status][notIn]=…` — click **All**.\n2. **Lead type?** `when[leadType][eq]=prospect` — the dropdown defaults to prospects.\n3. **Org pin?** `organizationId=496` — client-website leads never appear here.\n4. **Unknown value?** its `status` is not a leadStatus key (3 such leads in prod) — it matches no tab. Its other fields stay editable (the list-slot trigger only checks a value that changes), but writing an unknown status fails with 400 `\"<value>\" is not a key of list \"leadStatus\"`. Pick a valid stage to fix it.\n5. **Campaign?** stamped vs attached (see the semijoin playground).',
       },
       {
         where: 'ui',
