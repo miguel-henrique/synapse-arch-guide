@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import PasswordGate from './components/PasswordGate';
 import Nav from './components/Nav';
 import HomePage from './pages/HomePage';
+import FitsTogetherPage from './pages/FitsTogetherPage';
 import CoursePage from './pages/CoursePage';
 import GlossaryPage from './pages/GlossaryPage';
 import DocumentationPage from './pages/DocumentationPage';
@@ -52,6 +53,7 @@ export default function App() {
       <Nav page={page} setPage={setPage} />
       <main>
         {page === 'home'      && <HomePage      setPage={setPage} />}
+        {page === 'howitfits' && <FitsTogetherPage setPage={setPage} />}
         {page === 'deepdives' && <DeepDivesPage setPage={setPage} />}
         {page === 'modules'   && <ModulesPage   setPage={setPage} />}
         {page === 'tutorials' && <TutorialsPage setPage={setPage} />}

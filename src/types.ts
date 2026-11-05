@@ -2,6 +2,7 @@
 // (#/modules, #/tutorials …) so every page is linkable and survives reloads.
 export type Page =
   | 'home'
+  | 'howitfits'
   | 'deepdives'
   | 'modules'
   | 'tutorials'
@@ -12,6 +13,7 @@ export type Page =
 
 export const PAGES: { page: Page; label: string }[] = [
   { page: 'home', label: 'Architecture' },
+  { page: 'howitfits', label: 'How it fits' },
   { page: 'deepdives', label: 'Deep Dives' },
   { page: 'modules', label: 'Modules' },
   { page: 'tutorials', label: 'Tutorials' },

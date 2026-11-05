@@ -1,0 +1,23 @@
+/* How it fits together — reuses the kit page styles; a couple of local helpers. */
+
+.fits-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 1.25rem;
+  margin: 0.75rem 0 0.25rem;
+  font-size: 0.85rem;
+  color: var(--text-dim);
+}
+.fits-legend span { display: inline-flex; align-items: center; gap: 0.4rem; }
+.fits-legend i {
+  width: 14px; height: 14px; border-radius: 4px; display: inline-block;
+  border: 1px solid var(--border2);
+}
+
+.fits-twocol {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+  margin: 1rem 0;
+}
+@media (max-width: 760px) { .fits-twocol { grid-template-columns: 1fr; } }
