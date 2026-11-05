@@ -8,6 +8,7 @@ import GlossaryPage from './pages/GlossaryPage';
 import DocumentationPage from './pages/DocumentationPage';
 import DeepDivesPage from './pages/DeepDivesPage';
 import ModulesPage from './pages/ModulesPage';
+import ShowcasePage from './pages/ShowcasePage';
 import TutorialsPage from './pages/TutorialsPage';
 import QuestionsPage from './pages/QuestionsPage';
 import { type Page, pageFromHash } from './types';
@@ -56,6 +57,7 @@ export default function App() {
         {page === 'howitfits' && <FitsTogetherPage setPage={setPage} />}
         {page === 'deepdives' && <DeepDivesPage setPage={setPage} />}
         {page === 'modules'   && <ModulesPage   setPage={setPage} />}
+        {page === 'showcase'  && <ShowcasePage  setPage={setPage} />}
         {page === 'tutorials' && <TutorialsPage setPage={setPage} />}
         {page === 'course'    && <CoursePage />}
         {page === 'questions' && <QuestionsPage />}

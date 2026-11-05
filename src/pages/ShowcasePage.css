@@ -1,0 +1,39 @@
+/* Showcase — reuses the kit page styles; a few local helpers. */
+
+.sc-toc {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  margin: 1.25rem 0 0.5rem;
+  padding: 0.9rem 1.1rem;
+  background: var(--bg2);
+  border: 1px solid var(--border2);
+  border-radius: var(--radius-sm);
+}
+.sc-toc a { color: var(--purple-l); font-size: 0.9rem; text-decoration: none; }
+.sc-toc a:hover { text-decoration: underline; }
+
+.sc-claim {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  margin: 0.5rem 0 1rem;
+  padding: 0.9rem 1.1rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--purple-l);
+  border-radius: var(--radius-sm);
+}
+.sc-claim__row { display: grid; grid-template-columns: 130px 1fr; gap: 0.75rem; align-items: baseline; }
+@media (max-width: 640px) { .sc-claim__row { grid-template-columns: 1fr; gap: 0.2rem; } }
+.sc-claim__row p { margin: 0; }
+.sc-claim__tag {
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--purple-l);
+}
+.sc-claim__tag--ui { color: var(--teal-l); }
+
+.sc-cmd { white-space: pre-wrap; word-break: break-word; font-size: 0.75rem; }

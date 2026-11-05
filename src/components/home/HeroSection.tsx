@@ -94,6 +94,9 @@ export default function HeroSection({ setPage }: { setPage: (p: Page) => void })
             <button className="hero__cta hero__cta--secondary" onClick={() => setPage('howitfits')}>
               How it fits together
             </button>
+            <button className="hero__cta hero__cta--secondary" onClick={() => setPage('showcase')}>
+              Showcase: the backend
+            </button>
             <button className="hero__cta hero__cta--secondary" onClick={scrollToArch}>
               Explore Architecture
             </button>

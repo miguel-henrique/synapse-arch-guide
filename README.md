@@ -8,6 +8,7 @@ An interactive learning platform covering the CREAM-PIE architecture, the List p
 ## Sections
 
 - **Architecture** — Five-layer interactive overview, List types explorer, CREAM-PIE recipe decoder, Relationships & Perspective demo, Rendering Engine live demo, real code examples
+- **Showcase** — Demo scripts for presenting the Operations menu, the Synapse board and Leads at the backend level: manifests, `psql` queries against the local Docker Postgres, code paths, API calls, and a proof checklist against the doctrine
 - **Course** — 5 levels with questions, instant feedback, and sessionStorage progress
 - **Glossary** — All official terms from the CI Connect docs
 

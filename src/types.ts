@@ -5,6 +5,7 @@ export type Page =
   | 'howitfits'
   | 'deepdives'
   | 'modules'
+  | 'showcase'
   | 'tutorials'
   | 'course'
   | 'questions'
@@ -16,6 +17,7 @@ export const PAGES: { page: Page; label: string }[] = [
   { page: 'howitfits', label: 'How it fits' },
   { page: 'deepdives', label: 'Deep Dives' },
   { page: 'modules', label: 'Modules' },
+  { page: 'showcase', label: 'Showcase' },
   { page: 'tutorials', label: 'Tutorials' },
   { page: 'course', label: 'Course' },
   { page: 'questions', label: 'Questions' },
