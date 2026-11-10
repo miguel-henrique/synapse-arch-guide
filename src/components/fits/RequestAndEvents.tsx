@@ -155,6 +155,104 @@ export default function RequestAndEvents({ setPage }: { setPage: (p: Page) => vo
           ]}
         />
       </Section>
+
+      <Section
+        id="operating-pubsub"
+        label="Operating it"
+        title="Seeing, testing and changing notifications from Admin → PubSub"
+        intro={
+          <p>
+            The diagrams above are the machinery. This is the operator's view: where an event shows up,
+            how to tell whether an email went out, and what can be changed without code. Everything lives
+            under <strong>Admin → PubSub</strong> (<code>/admin/pubsub</code>), Super Admin only.
+          </p>
+        }
+      >
+        <h3>Worked example: "Ticket assigned to you"</h3>
+        <ol className="kit-prose">
+          <li>Someone assigns a ticket to you. The generic write emits <code>core:todo:&lt;id&gt;:updated:…</code>.</li>
+          <li>The CODE subscriber <code>helpdesk.todo.activity-notify</code> reads the audit diff, sees a new assignee
+            who is not the person acting, and sends an in-app notification plus a templated-email request.</li>
+          <li>The request is an event on <code>comms:email:requested</code>.</li>
+          <li>The CODE subscriber <strong>Comms engine delivery (CODE)</strong> (<code>comms.email.deliver</code>) sends it
+            through SendGrid from <code>noreply@ciwebgroup.com</code> and logs it in <code>messages</code> (channel <code>email</code>).</li>
+        </ol>
+        <p className="kit-prose">
+          A ticket status move runs the same way through <code>helpdesk:ticket:&lt;id&gt;:stage-changed:&lt;status&gt;</code> and
+          the <strong>Helpdesk — ticket status notifications (code)</strong> subscriber: the assignee and creator get an
+          in-app notification, and the client who submitted the ticket gets the status email.
+        </p>
+        <Callout kind="warn" title="Nobody is told about their own action">
+          Moving or assigning your <em>own</em> ticket notifies no one, and status emails go only to the
+          non-staff submitter. To test, assign a ticket to yourself <strong>from another account</strong>.
+        </Callout>
+
+        <h3>The screens</h3>
+        <div className="kit-table-wrap">
+          <table className="kit-table">
+            <thead><tr><th>Tab</th><th>What it is</th><th>Use it to</th></tr></thead>
+            <tbody>
+              <tr><td>Topics</td><td>every event channel</td><td>find a topic, e.g. search <code>helpdesk:ticket</code> or <code>comms:email:requested</code></td></tr>
+              <tr><td>Subscribers</td><td>what reacts to each topic (CODE, EMAIL, TEXT, API)</td><td>see what runs on a topic; untick <strong>Active</strong> to switch one off</td></tr>
+              <tr><td>Events</td><td>each thing that happened, with its payload</td><td>confirm the event fired at all</td></tr>
+              <tr><td>Deliveries</td><td>one row per (event, subscriber): DELIVERED / FAILED / RETRYING / SKIPPED…</td><td>see why something did not send (the error is on the row)</td></tr>
+              <tr><td>Email Layouts</td><td>shared header and footer</td><td>restyle emails whose subscriber has <strong>Wrap in a shared layout</strong> on</td></tr>
+              <tr><td>Merge Tags</td><td>record fields an EMAIL / TEXT subscriber can insert</td><td>build subject and body from the record that fired the event</td></tr>
+              <tr><td>Logs (left menu) · Analytics</td><td>history and volume</td><td>spot a topic that stopped firing</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <h3>"An email didn't arrive": where to look</h3>
+        <ol className="kit-prose">
+          <li><strong>Events</strong>: did the source event fire (the ticket update or stage change)? If not, nothing downstream ran.</li>
+          <li><strong>Deliveries</strong> for that event: did the CODE subscriber deliver? DELIVERED with nothing sent usually means
+            the rules found no recipient (your own action, or a staff submitter).</li>
+          <li><strong>Events</strong> on <code>comms:email:requested</code>: was an email requested? Then <strong>Deliveries</strong> for it:
+            FAILED rows carry the provider error.</li>
+        </ol>
+        <Callout kind="info" title="Preview and Test do nothing for CODE subscribers">
+          <strong>Preview</strong> on a CODE subscriber shows an empty <code>{'{}'}</code>, and <strong>Test</strong> answers
+          "Unsupported subscriber type: CODE". Test is for EMAIL, TEXT and API subscribers. Never use
+          <strong> Resend</strong> on old <code>comms:email:requested</code> deliveries to test: they are real emails to clients.
+        </Callout>
+
+        <h3>What can change without code</h3>
+        <div className="kit-table-wrap">
+          <table className="kit-table">
+            <thead><tr><th>Want to…</th><th>How</th><th>Code?</th></tr></thead>
+            <tbody>
+              <tr><td>Change a ticket email's wording</td><td>template in <code>comms/templates/helpdesk-billing.templates.ts</code></td><td><Pill color="var(--orange-l)">code</Pill></td></tr>
+              <tr><td>Change who gets ticket notifications</td><td>rules in <code>helpdesk/ticketActivity.ts</code></td><td><Pill color="var(--orange-l)">code</Pill></td></tr>
+              <tr><td>Change the header / footer</td><td>Email Layouts (only for layout-wrapped emails)</td><td><Pill color="var(--green)">no code</Pill></td></tr>
+              <tr><td>Add an email / SMS / webhook on any event</td><td>Subscribers → New Subscriber: topic, recipients, subject, body with merge tags</td><td><Pill color="var(--green)">no code</Pill></td></tr>
+              <tr><td>Send only in some cases</td><td>the subscriber's <strong>Delivery conditions</strong> (CREAM-PQL rules)</td><td><Pill color="var(--green)">no code</Pill></td></tr>
+              <tr><td>Switch one off</td><td>untick <strong>Active</strong></td><td><Pill color="var(--green)">no code</Pill></td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <Callout kind="danger" title="Known gaps (Nov 2026)">
+          <ul>
+            <li><strong>Email subscribers made in Synapse can't send.</strong> The New Subscriber form has no From field, and both
+              Test and real delivery require one ("From email is required"). Platform emails are unaffected: they go
+              through the comms engine, which uses the configured sender.</li>
+            <li><strong>@mentions notify no one.</strong> Ticket notifications cover assignment and status only; the
+              <code> notify-internal-mention</code> template exists but nothing sends it.</li>
+          </ul>
+        </Callout>
+
+        <Files
+          items={[
+            { path: 'apps/web-services/src/modules/helpdesk/ticketActivityNotifications.ts', note: 'the two ticket CODE handlers' },
+            { path: 'apps/web-services/src/modules/helpdesk/ticketActivity.ts', note: 'who hears about what (pure rules)' },
+            { path: 'apps/web-services/src/services/bootstrapTicketActivitySubscribers.ts', note: 'ensures the ticket subscriber rows at boot' },
+            { path: 'apps/web-services/src/modules/comms/commsPubsubHandler.ts', note: 'comms.email.deliver: the templated-email sender' },
+            { path: 'apps/web-services/src/modules/pubsub/subscriberTest.service.ts', note: 'Preview / Test buttons' },
+            { path: 'apps/synapse-v3/src/components/admin/pubsub/SubscribersTab.tsx', note: 'the New Subscriber form' },
+          ]}
+        />
+      </Section>
     </>
   );
 }
