@@ -25,7 +25,11 @@ const EVID: Record<Evidence, { label: string; color: string; tip: string }> = {
 export default function QuestionsPage() {
   const [component, setComponent] = useState<string>('all');
   const [kind, setKind] = useState<Kind | 'all'>('all');
-  const [open, setOpen] = useState<string | null>('S1');
+  // #/questions/<id> opens one entry (e.g. #/questions/G16).
+  const [open, setOpen] = useState<string | null>(() => {
+    const sub = window.location.hash.split('/')[2];
+    return sub && QUESTIONS.some(q => q.id === sub) ? sub : 'S1';
+  });
 
   const list = useMemo(
     () =>
@@ -99,10 +103,14 @@ export default function QuestionsPage() {
                   <Pill color={SEV[q.severity].color}>{SEV[q.severity].label}</Pill>
                   <Pill color="var(--text-dim)">{KIND[q.kind].icon} {q.component}</Pill>
                   <span title={EVID[q.evidence].tip}><Pill color={EVID[q.evidence].color}>{EVID[q.evidence].label}</Pill></span>
+                  {q.resolved && <Pill color="var(--green)">✓ resolved</Pill>}
                 </span>
               </button>
               {isOpen && (
                 <div className="q-item__body animate-fade-in">
+                  {q.resolved && (
+                    <div className="q-resolved"><strong>Resolved on stage:</strong> <Markdown source={q.resolved} /></div>
+                  )}
                   <Markdown source={q.detail} />
                   <div className="q-ask">
                     <span className="q-ask__label">❓ Ask the team</span>

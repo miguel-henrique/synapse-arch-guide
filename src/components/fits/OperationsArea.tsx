@@ -145,24 +145,23 @@ export default function OperationsArea({ setPage }: { setPage: (p: Page) => void
           <table className="kit-table">
             <thead><tr><th>Node</th><th>navigationType</th><th>Points at</th><th>Gets a saved-views accordion?</th></tr></thead>
             <tbody>
-              <tr><td><code>operations.synapse</code> and the other departments</td><td><Pill color="var(--purple-l)">CreamPie</Pill></td><td>recipe <code>operations.department.synapse</code> (resource <code>todos</code>)</td><td><Pill color="var(--pink)">No</Pill> — it <em>is</em> one perspective</td></tr>
+              <tr><td><code>operations.synapse</code> and the other departments</td><td><Pill color="var(--purple-l)">CreamPie</Pill></td><td>recipe <code>operations.department.synapse</code> (resource <code>todos</code>)</td><td><Pill color="var(--yellow)">Only its own</Pill> the views saved on it (<code>baseRecipe</code>), since Nov 9</td></tr>
               <tr><td><code>operations.support</code> ("Support Tickets")</td><td><Pill color="var(--green)">Item</Pill> + <code>primaryResource: todos</code></td><td>a route, plus every recipe over <code>todos</code></td><td><Pill color="var(--green)">Yes</Pill></td></tr>
               <tr><td><code>operations.projects</code></td><td><Pill color="var(--green)">Item</Pill></td><td>a route</td><td>only if it declares a <code>primaryResource</code></td></tr>
             </tbody>
           </table>
         </div>
         <Callout kind="info" title="Why this matters for saved views">
-          The sidebar only grows a perspectives/saved-views accordion under a node whose{' '}
-          <code>navigationType === 'item'</code> and which has a <code>primaryResource</code>{' '}
-          (<code>UnifiedSidebar.tsx</code>, <code>nodeToItem</code>). A CreamPie node is deliberately
-          excluded — otherwise every department board would list the same accordion of all todo
-          perspectives under it. That is the whole reason the Synapse board shows no saved views in
-          the sidebar while Leads (an Item) does. The Synapse module page traces this line by line.
+          An <strong>Item</strong> node with a <code>primaryResource</code> lists the resource's recipes and the views saved on it.
+          A <strong>CreamPie</strong> node (a department board) lists <em>only the views saved on that board</em>: a view saved
+          there stores the board's recipe as <code>baseRecipe</code>, and applying it ANDs the board's conditions under the
+          view's own. Before Nov 9 a CreamPie node got no accordion at all, because listing every todo perspective under every
+          department drew all the boards under each one. The Synapse module page has the three commits.
         </Callout>
         <Files
           items={[
             { path: 'modules/operations/module.json (navigation)', note: 'operations.synapse = CreamPie; operations.support = Item over todos' },
-            { path: 'apps/synapse-v3/src/components/dashboard/UnifiedSidebar.tsx', note: 'nodeToItem: resource attached only for navigationType === item' },
+            { path: 'apps/synapse-v3/src/components/dashboard/navPerspectives.ts', note: 'perspectivesForNode: recipe pages list only views saved on them' },
           ]}
         />
       </Section>

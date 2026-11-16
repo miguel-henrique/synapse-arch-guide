@@ -5,7 +5,7 @@ import { TUTORIALS, VERDICT } from '../data/tutorials';
 import type { Page } from '../types';
 import './TutorialsPage.css';
 
-const GROUPS = ['Leads', 'Infrastructure', 'Everyday'] as const;
+const GROUPS = ['Getting started', 'Leads', 'Infrastructure', 'Everyday'] as const;
 
 export default function TutorialsPage({ setPage }: { setPage?: (p: Page) => void }) {
   const [id, setId] = useState(() => {

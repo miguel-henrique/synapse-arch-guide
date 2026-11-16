@@ -6,6 +6,7 @@ import UrlAnatomy from '../components/deep/UrlAnatomy';
 import RelationshipDeep from '../components/deep/RelationshipDeep';
 import TransformDeep from '../components/deep/TransformDeep';
 import SchemaB from '../components/deep/SchemaB';
+import PubSubDeep from '../components/deep/PubSubDeep';
 import type { Page } from '../types';
 import './DeepDivesPage.css';
 
@@ -16,6 +17,7 @@ const TABS = [
   { id: 'rel', label: 'Relationships', icon: '🕸️' },
   { id: 'transform', label: 'TRANSFORM', icon: '🧮' },
   { id: 'schemab', label: 'Lists all the way down', icon: '🧬' },
+  { id: 'pubsub', label: 'PubSub', icon: '📣' },
 ];
 
 export default function DeepDivesPage({ setPage }: { setPage: (p: Page) => void }) {
@@ -54,6 +56,7 @@ export default function DeepDivesPage({ setPage }: { setPage: (p: Page) => void 
       {tab === 'rel' && <RelationshipDeep />}
       {tab === 'transform' && <TransformDeep />}
       {tab === 'schemab' && <SchemaB />}
+      {tab === 'pubsub' && <PubSubDeep />}
     </div>
   );
 }

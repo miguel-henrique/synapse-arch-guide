@@ -3,6 +3,7 @@ import PasswordGate from './components/PasswordGate';
 import Nav from './components/Nav';
 import HomePage from './pages/HomePage';
 import FitsTogetherPage from './pages/FitsTogetherPage';
+import ErpPage from './pages/ErpPage';
 import CoursePage from './pages/CoursePage';
 import GlossaryPage from './pages/GlossaryPage';
 import DocumentationPage from './pages/DocumentationPage';
@@ -55,6 +56,7 @@ export default function App() {
       <main>
         {page === 'home'      && <HomePage      setPage={setPage} />}
         {page === 'howitfits' && <FitsTogetherPage setPage={setPage} />}
+        {page === 'erp'       && <ErpPage       setPage={setPage} />}
         {page === 'deepdives' && <DeepDivesPage setPage={setPage} />}
         {page === 'modules'   && <ModulesPage   setPage={setPage} />}
         {page === 'showcase'  && <ShowcasePage  setPage={setPage} />}

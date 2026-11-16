@@ -6,7 +6,15 @@ import { useReadingProgress } from '../hooks/useReadingProgress';
 import './DocumentationPage.css';
 
 export default function DocumentationPage() {
-  const [activeDocId, setActiveDocId] = useState<string>(DOCS[0].id);
+  // #/docs/<docId> deep-links to one doc (e.g. #/docs/pubsub).
+  const [activeDocId, setActiveDocIdState] = useState<string>(() => {
+    const sub = window.location.hash.split('/')[2];
+    return DOCS.some(d => d.id === sub) ? sub! : DOCS[0].id;
+  });
+  const setActiveDocId = (id: string) => {
+    setActiveDocIdState(id);
+    history.replaceState(null, '', `#/docs/${id}`);
+  };
   const [search, setSearch] = useState('');
   const [navOpen, setNavOpen] = useState(false);
   const contentRef = useRef<HTMLDivElement>(null);

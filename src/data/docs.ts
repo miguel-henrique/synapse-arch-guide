@@ -12,6 +12,7 @@
 //   docs/CREAM-PIE.md
 //   docs/LOADED-CREAM-PIE-STRATEGY.md
 //   docs/architecture/ERP-PRIMITIVES.md
+//   docs/pubsub/README.md
 //   modules/_schema/module.schema.json  (reference)
 //   modules/crm/module.json             (reference)
 // ─────────────────────────────────────────────────────────────────────────────
@@ -767,6 +768,239 @@ apps/synapse-v3/src/
 3. **\`lib/\`, \`services/\` and \`utils/\` are not three things.** Pure helpers are \`utils/\`; anything that talks to the API is \`api/\`; nothing else earns a top-level directory.
 4. **\`components/backoffice/\` is a second \`pages/\` and should not exist.** Feature slices belong in \`features/\`.
 5. **One naming convention.** \`useThing.ts\`, camel, always.`,
+      },
+    ],
+  },
+
+  // ───────────────────────────────────────────────────────────────────────────
+  // PUBSUB (docs/pubsub/README.md, shared by Marcos in Slack; stage de81a84533)
+  // ───────────────────────────────────────────────────────────────────────────
+  {
+    id: 'pubsub',
+    title: 'Pub/Sub System',
+    short: 'PubSub',
+    summary:
+      'Database-backed event pipeline: topics, subscribers, data shapes, subtopic chains, and the /pubsub/v1 publish endpoint. The team\'s pinned reference for doctrine §8 (all automation through pubsub).',
+    icon: '📣',
+    color: 'var(--orange-l)',
+    source: 'docs/pubsub/README.md',
+    sections: [
+      {
+        id: 'pubsub-architecture',
+        title: 'Architecture',
+        body: `\`\`\`
+Emit (CRUD hooks / emitExplicitTopics / POST /pubsub/v1/publish)
+        ↓
+PubSubEvent (Postgres)
+        ↓  enqueue loop (claims pending rows FOR UPDATE SKIP LOCKED)
+Kafka/Redpanda topic "pubsub-events"
+        ↓  deliverLoop (consumer group "pubsub-deliver")
+subscriberExecutionService.executeEventSubscribers()
+        ├─ Idempotency check (PubSubDelivery unique on eventId+subscriberId)
+        ├─ Payload shape validation (subscriber's own or inherited shape)
+        ├─ MTEL delivery conditions
+        ├─ Fire ASYNC subtopics (fire-and-forget)
+        ├─ Deliver (EMAIL / TEXT / API webhook / legacy)
+        └─ Fire SYNC subtopics (awaited, optional delayMs)
+\`\`\`
+
+The enqueue loop runs one pass at a time: it claims up to 100 rows with
+\`enqueuedAt IS NULL\` (read through the partial index \`PubSubEvent_pending_idx\`)
+inside a transaction, produces them, marks them enqueued and commits. A full
+batch, or a pass that stopped at the byte budget (\`PUBSUB_MAX_BATCH_BYTES\`)
+with claimed rows left over, is followed immediately by another pass;
+otherwise it waits 5 seconds. On SIGTERM/SIGINT, \`stopPubSubWorker()\` (called
+from server.ts's graceful shutdown) starts no new pass, gives a running one up
+to 8 seconds to commit, and disconnects the producer.
+Because the claim skips locked rows, any number of web-services replicas can
+run the loop without producing the same event twice. Delivery stays
+at-least-once (a commit that fails after the send re-produces the batch), and
+\`PubSubDelivery\`'s unique \`eventId + subscriberId\` makes that harmless.
+
+Key backend files:
+
+| Concern | File |
+|---------|------|
+| Storage | \`PubSubEvent\` / \`PubSubDelivery\` models (\`libs/prisma/src/schema/pubsub/\`); topics and subscribers are items of the platform lists \`pubsubTopic\` / \`pubsubSubscriber\` (\`libs/prisma/src/utils/pubsubItems.ts\`) |
+| Subscriber execution pipeline | \`apps/web-services/src/services/subscriberExecutionService.ts\` |
+| Payload shapes & filters | \`apps/web-services/src/services/payloadShapeService.ts\` |
+| Event emission | \`apps/web-services/src/services/pubsubService.ts\` |
+| Kafka worker | \`apps/web-services/src/workers/pubsubWorker.ts\` |
+| Publish endpoint | \`apps/web-services/src/modules/pubsub/pubsub-v1.routes.ts\` / \`pubsub-v1.controller.ts\` |
+| Management endpoints | \`apps/web-services/src/modules/pubsub/pubsub.routes.ts\` (mounted at \`/api/pubsub\`) |
+| Conditions / merge tags (MTEL) | \`libs/mtel/\` |
+| Synapse admin UI | \`apps/synapse-v3/src/pages/PubSubAdmin.tsx\`, \`apps/synapse-v3/src/components/admin/pubsub/\` |`,
+      },
+      {
+        id: 'pubsub-concepts',
+        title: 'Concepts',
+        body: `### Registered vs Dynamic Topics
+
+- **Registered topics** are created intentionally (Synapse UI or seeders) with \`isDynamic: false\`. They can declare a payload shape, authentication requirements, and synchronous execution.
+- **Dynamic topics** are auto-created (\`isDynamic: true\`) the first time server code emits, or a subscriber subscribes to, an unregistered topic name — subscribers can subscribe to ANY topic by typing its name in the subscriber form's topic combobox. The external publish surfaces (\`/pubsub/v1/publish\`, \`/api/pubsub/emit\`, \`?publish=\`) never create a topic: an unknown name is refused with 404 (to a caller who passed the identity checks; others get 401/403 first).
+
+### Data Shapes
+
+A data shape describes the expected payload structure as a flat field list stored as JSON:
+
+\`\`\`json
+[
+  { "path": "organization.name", "label": "Organization Name", "type": "string", "required": true },
+  { "path": "contact.email",     "label": "Contact Email",     "type": "string", "required": false }
+]
+\`\`\`
+
+- **Topics** declare the shape of the payload they expect (\`PubSubTopic.payloadShape\`).
+- **Subscribers** either inherit the topic's shape (\`inheritShape: true\`, the default) or define their own (\`PubSubSubscriber.payloadShape\`).
+- The shape editor supports **importing** fields from a Resource (Prisma model) or another Topic, with **Merge** or **Replace** semantics when a shape already exists. On the subscriber form, the subscribed topic is the default import source.
+- **Merge tags pull from the effective data shape** (as \`{{ event.path }}\` tags). When no shape is defined, the picker falls back to the subscriber's Resource Type fields (\`{{ record.path }}\` tags).
+
+**Validation** (\`payloadShapeService.validatePayloadAgainstShape\`):
+
+- *Subscriber execution validation*: the event payload must be able to hydrate the subscriber's effective shape. Missing required fields → delivery is recorded as \`SKIPPED\`.
+- *SubTopic execution validation*: the (filtered) payload must hydrate the target topic's shape (if registered), **and then** pass the subtopic's conditions, before the subtopic fires.
+
+### SubTopics / Topic Chains
+
+Subscribers may register subtopics (entries of the subscriber's \`config.subTopics\` array) that publish follow-up topics when the subscriber fires. Each subtopic has:
+
+| Field | Meaning |
+|-------|---------|
+| \`topicName\` | Topic to publish (registered or dynamic) |
+| \`isAsync\` | \`true\` (default): fire-and-forget at the **beginning** of subscriber execution. \`false\`: awaited at the **end**, after the subscriber's delivery completes |
+| \`delayMs\` | Delay before firing (synchronous subtopics only) |
+| \`payloadFilter\` | Map of output field path → MTEL expression. Constructs (and may redefine the shape of) the subtopic payload. Empty = pass-through |
+| \`conditions\` | MTEL condition group evaluated against the *filtered* payload |
+
+Subtopics only fire when the parent subscriber's own shape validation and delivery conditions pass.
+
+### Loop Protection
+
+Every chained payload carries \`_chain\` metadata:
+
+\`\`\`json
+{ "_chain": { "path": ["form-submitted", "lead-scored"], "depth": 2 } }
+\`\`\`
+
+A topic may appear at most **5 times** (\`MAX_LOOP_ITERATIONS\`) in a chain. Further emissions of that topic are blocked and logged. Intentional loops under the cap can be tamed using payload filters and conditions as a reducer.
+
+The Synapse UI also walks the subscriber→subtopic graph when a subtopic is added and shows a warning ("The potential for an infinite loop has been detected…") with **Dismiss** and **Remove Topic** actions.`,
+      },
+      {
+        id: 'pubsub-pubsub-v1-publish-endpoint',
+        title: '/pubsub/v1 Publish Endpoint',
+        body: `### Routes
+
+| Method | Path | Description |
+|--------|------|-------------|
+| POST | \`/pubsub/v1/publish/{topic}\` | Publish a single topic |
+| POST | \`/pubsub/v1/publish/{topic}/{topic}/{topic}\` | Publish a topic chain (N topics) |
+| POST | \`/pubsub/v1/topics/:id/generate-key\` | Generate/rotate a topic-scoped API key (verified internal staff) |
+
+The request body is the event payload (JSON object, shared by every topic in the chain). Every topic in the chain must already exist; an unknown topic refuses the whole chain with 404.
+
+### Execution Order
+
+Topics in the path are processed **in order**:
+
+- A registered topic with \`isSynchronous: true\` executes its subscribers **inline** — the next topic in the chain does not fire until its subscribers complete (middleware-style).
+- All other topics (including dynamic ones) are broadcast fire-and-forget in a loop; the Kafka worker delivers them asynchronously.
+
+### Authentication (per topic)
+
+| Topic configuration | Requirement |
+|---------------------|-------------|
+| \`customAuth: true\` (with a generated key) | \`X-API-Key: <topic key>\` header (or \`Authorization: Bearer <topic key>\`) |
+| \`requiresAuth: true\` (default) | Standard auth — API token (\`route:pubsub-v1\` permission) or JWT — by verified internal staff (403 for a tenant user or a decode-only identity) |
+| Not registered | Refused: 404 to verified internal staff, 401/403 to anyone else, so a caller cannot probe which names exist |
+| \`requiresAuth: false\`, no custom auth | Public |
+| \`system:*\` (any configuration) | Standard auth **and** a verified Super Admin (\`Super Admins\` in UserRole). Their subscribers are pass-throughs — \`system:notification:send\` takes \`to\`/\`fromEmail\`/\`html\` from the event — so only server code emits them. |
+
+The strictest requirement across a chain wins. When multiple custom-auth topics share a chain, the presented key must match every one of them. These rules live in \`modules/pubsub/topicPublishAuth.ts\` and also apply to \`/api/pubsub/emit\` and to \`?publish=\` on generic-API writes.
+
+### Examples
+
+\`\`\`bash
+# Publish a single topic (API token auth)
+curl -X POST https://api.ciwebgroup.com/pubsub/v1/publish/lead-created \\
+  -H "X-API-Token: <token>" \\
+  -H "Content-Type: application/json" \\
+  -d '{"email": "jane@example.com", "source": "landing-page"}'
+
+# Publish a chain — sync topics complete before the next topic fires
+curl -X POST https://api.ciwebgroup.com/pubsub/v1/publish/lead-created/lead-scored/crm-sync \\
+  -H "X-API-Token: <token>" \\
+  -H "Content-Type: application/json" \\
+  -d '{"email": "jane@example.com"}'
+
+# Publish to a topic with a custom (topic-scoped) API key
+curl -X POST https://api.ciwebgroup.com/pubsub/v1/publish/webhooks-inbound \\
+  -H "X-API-Key: <topic api key>" \\
+  -H "Content-Type: application/json" \\
+  -d '{"event": "external.ping"}'
+\`\`\`
+
+Response:
+
+\`\`\`json
+{
+  "success": true,
+  "message": "Published 3 topic(s)",
+  "results": [
+    { "topic": "lead-created", "eventId": 101, "registered": true,  "mode": "sync"  },
+    { "topic": "lead-scored",  "eventId": 102, "registered": true,  "mode": "async" },
+    { "topic": "crm-sync",     "eventId": 103, "registered": false, "mode": "async" }
+  ]
+}
+\`\`\``,
+      },
+      {
+        id: 'pubsub-management-endpoints-api-pubsub',
+        title: 'Management Endpoints (`/api/pubsub`)',
+        body: `| Method | Path | Description |
+|--------|------|-------------|
+| POST | \`/api/pubsub/emit\` | Manually emit events to topics (verified internal staff; per-topic rules as above, a topic key goes in \`X-API-Key\`) |
+| GET | \`/api/pubsub/resources/:resourceType/fields\` | Merge tag fields for a resource (verified internal staff) |
+| POST | \`/api/pubsub/subscribers/:id/preview\` | Preview rendered templates (verified internal staff) |
+| POST | \`/api/pubsub/subscribers/:id/test\` | Send a test delivery (verified internal staff) |
+| POST | \`/api/pubsub/deliveries/:eventId/:subscriberId/resend\` | Resend one FAILED delivery (verified internal staff) |
+| POST | \`/api/pubsub/webhook-test\` | Echo endpoint for testing API subscribers |
+
+"Verified internal staff" is \`requireVerifiedStaff\` (\`middleware/verifiedIdentity.ts\`): a signature-verified identity holding any internal-staff role.
+
+\`?publish=a,b\` on a generic-API request is honoured on writes only (POST/PUT/PATCH/DELETE; ignored on GET/HEAD), and only for verified internal staff under the same per-topic rules — anyone else is refused (403, or 401 with no identity at all) before the write runs.
+
+Topic and subscriber CRUD goes through \`pubsub.routes.ts\`: \`GET/POST /api/pubsub/topics\`, \`PATCH/DELETE /api/pubsub/topics/:id\` (writes Super Admin only), and the same four on \`/api/pubsub/subscribers\`. Subtopics are edited as the subscriber's \`config.subTopics\`.`,
+      },
+      {
+        id: 'pubsub-data-model',
+        title: 'Data Model',
+        body: `\`PubSubTopic\` and \`PubSubSubscriber\` are the row shapes \`libs/prisma/src/utils/pubsubItems.ts\` returns for items of the \`pubsubTopic\` / \`pubsubSubscriber\` lists (ids are item ids); \`PubSubEvent\` and \`PubSubDelivery\` are Prisma models. A topic's publish key is a credential of kind \`pubsub_topic_key\`.
+
+| Shape | Notable fields |
+|-------|----------------|
+| \`PubSubTopic\` | \`name\` (unique), \`onCreate/onUpdate/onDelete\`, \`payloadShape\`, \`isDynamic\`, \`requiresAuth\`, \`customAuth\`, \`isSynchronous\` |
+| \`PubSubSubscriber\` | \`topicId\`, \`type\` (EMAIL/TEXT/API/…), \`config\`, \`conditions\`, \`resource\`, \`payloadShape\`, \`inheritShape\`, \`isActive\` |
+| subtopic (\`config.subTopics[]\`) | \`topicName\`, \`isAsync\`, \`delayMs\`, \`payloadFilter\`, \`conditions\` (array order is run order) |
+| \`PubSubEvent\` | \`topicId\`, \`payload\` (may include \`_chain\` metadata), \`enqueuedAt\` |
+| \`PubSubDelivery\` | \`eventId\` + \`subscriberId\` (unique), \`status\` (PENDING/ENQUEUED/DELIVERED/FAILED/RETRYING/SKIPPED), \`attempts\`, \`lastError\` |`,
+      },
+      {
+        id: 'pubsub-merge-tags-conditions-mtel',
+        title: 'Merge Tags & Conditions (MTEL)',
+        body: `Templates use \`{{ expression | transform }}\` syntax evaluated by \`@ci-connect/mtel\`:
+
+- \`event.*\` — the event payload (data shape fields resolve here)
+- \`record.*\` — the loaded resource record (when \`subscriber.resource\` is set)
+- \`topic.*\`, \`now\`, \`secrets.*\` — metadata, timestamp, env-backed secrets
+- Conditions are AND/OR rule groups: \`{ "logic": "AND", "rules": [{ "field": "event.action", "operator": "equals", "value": "created" }] }\``,
+      },
+      {
+        id: 'pubsub-synapse-admin-ui',
+        title: 'Synapse Admin UI',
+        body: `- **Topics** (\`/pub-sub-topic\`): name or resource, event triggers, payload shape editor with import, authentication checkboxes + Generate API Key, synchronous execution toggle, publish URL display.
+- **Subscribers** (\`/pub-sub-subscriber\`): topic combobox (select a registered topic or type any name — dynamic topics are created automatically), resource type, inherit-shape checkbox + shape editor, delivery conditions builder, **Add Subtopic** button with chips (click to configure async/delay, payload filter, conditions; "x" to remove), type-specific delivery configuration with merge tag picker.
+- **Events / Deliveries**: inspection lists for observability.`,
       },
     ],
   },

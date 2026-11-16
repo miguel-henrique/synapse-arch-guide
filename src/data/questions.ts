@@ -19,6 +19,8 @@ export interface Question {
   detail: string;
   ask: string;
   files?: string[];
+  /** Set when stage has since fixed it: what changed, with the commit. */
+  resolved?: string;
 }
 
 export const COMPONENTS = [
@@ -30,6 +32,8 @@ export const COMPONENTS = [
   'Relationships',
   'Leads',
   'Infrastructure',
+  'Modules & availability',
+  'PubSub & events',
   'Docs',
 ] as const;
 
@@ -89,6 +93,8 @@ export const QUESTIONS: Question[] = [
     kind: 'security',
     severity: 'medium',
     evidence: 'verified',
+    resolved:
+      'Commit `63b9f05007` (Oct 27, "move the Infrastructure menu into a module manifest") gave Infrastructure a `modules/infrastructure/module.json`; its nodes now go through the same module gate and `canRead` filter as every other workspace. `pages/Infrastructure.tsx` was deleted on Nov 3 (`517549e9f1`, Backups screens became recipes).',
     title: 'The Infrastructure menu bypasses the canRead gate',
     detail:
       'The sidebar\'s legacy branch for Infrastructure is gated only by `isHiddenByModules`; its own comment says it "predates the ability-based canRead gate and was never wired into it". The page itself does a manual staff redirect. Server-side endpoints have their own route permissions (seeded), so this is mainly a UI exposure — but it is the only workspace where menu visibility is not ability-driven.',
@@ -292,6 +298,8 @@ export const QUESTIONS: Question[] = [
     kind: 'gap',
     severity: 'medium',
     evidence: 'verified',
+    resolved:
+      'Mostly done on stage: the workspace has a manifest (`modules/infrastructure/module.json`, Oct 27) and the Backups screens became recipes and a target detail (Nov 3, `517549e9f1`), deleting `/infrastructure`. The scorecard on Modules → Infrastructure describes the earlier state.',
     title: 'Infrastructure is entirely outside the architecture',
     detail:
       'No manifest, hand-written nav, hardcoded tab sets, 8 TS enums with colour maps, duplicated fetch hooks, bespoke tables, and the generic API explicitly blocked for backup models. See Modules → Infrastructure for the scorecard.',
@@ -403,5 +411,66 @@ export const QUESTIONS: Question[] = [
     detail:
       'If values are data, stakeholders edit them in production (as with leadType on Oct 19–20). There is no visible review/approval step or change log surfaced in the Lists admin.',
     ask: 'Is there an audit trail of List/ListItem edits (who, when, before/after), and a policy for which lists non-developers may edit?',
+  },
+  // ── modules & availability (added Nov 16 2026, stage de81a84533) ─────────
+  {
+    id: 'G15',
+    component: 'Modules & availability',
+    kind: 'gap',
+    severity: 'medium',
+    evidence: 'verified',
+    title: 'The menu\'s module gate caches across tenant switches (and breaks doctrine §7)',
+    detail:
+      '`useDisabledNavRoots` fetches `modules/enabled` with `useEffect` + `fetch` and keeps the answer in a module-level `let cache`, keyed by nothing. Doctrine §7 forbids both ("no useEffect+fetch, no module-level fetched-once singletons"). Because the tenant switcher no longer reloads the page (`ErpProvider.setOrganization` invalidates TanStack queries instead), the sidebar keeps hiding the *previous* tenant\'s disabled modules until a reload. Meanwhile `ErpProvider` already fetches the same data correctly (`useEnabledModules(organizationId)`, query key `[\'erp\', \'modules\', organizationId]`). Read in the code, not reproduced.',
+    ask: 'Should the sidebar read modules from the ERP context (`useErp().modules`) and `useDisabledNavRoots` be deleted? That is also the natural first step for the menu restructuring.',
+    files: ['apps/synapse-v3/src/hooks/useDisabledNavRoots.ts', 'apps/synapse-v3/src/erp/useErpBootstrap.ts:202-226', 'apps/synapse-v3/src/components/dashboard/UnifiedSidebar.tsx:252'],
+  },
+  {
+    id: 'G16',
+    component: 'Modules & availability',
+    kind: 'gap',
+    severity: 'low',
+    evidence: 'verified',
+    title: 'Module dependencies are checked at build time only',
+    detail:
+      '`dependencies.requires / conflicts` in a manifest are validated by `tools/build-modules` (unknown slugs, a module both required and conflicting) and set the build order. Nothing reads them at run time: `resolveModulesForOrg` and `PATCH /synapse/v1/modules/:slug/org/:orgId` let a tenant have `billing` on while a module it requires is off, and the menu then shows places whose prerequisites are missing.',
+    ask: 'Should enabling a module for an organization refuse (or cascade) when a required module is disabled, and should the resolver report `source: "DEPENDENCY"`?',
+    files: ['tools/build-modules/lib/validate.mjs:112-118', 'apps/web-services/src/modules/synapse/moduleRegistry.ts:69-150'],
+  },
+  {
+    id: 'G17',
+    component: 'Modules & availability',
+    kind: 'gap',
+    severity: 'info',
+    evidence: 'verified',
+    title: 'No single capability resolver',
+    detail:
+      'Whether a person may use something is decided in four places: `resolveModulesForOrg` (module availability), CASL abilities (`/me/ability`, prefix cascade), recipe `availableWhen`, and `config/staffOnly.ts`. Each is sound, and the server enforces abilities independently, but no one call answers "can this principal do X on this record here, and if not, why". That is the third design decision in the ERP write-up Chris shared (`resolveCapability({ module, capability, tenantId, principalId, resourceId })`).',
+    ask: 'Is a shared `resolveCapability` with an explicit reason part of the ERP planning, or is the current split intended?',
+  },
+  // ── pubsub & events ──────────────────────────────────────────────────────
+  {
+    id: 'G18',
+    component: 'PubSub & events',
+    kind: 'gap',
+    severity: 'low',
+    evidence: 'verified',
+    title: 'Two PubSub behaviours worth knowing: emit is outside the write\'s transaction, and sync subtopics fire after a FAILED delivery',
+    detail:
+      '1) `emitPubSubEvent(modelName, action, payload)` takes no transaction client, so on the generic write path the `PubSubEvent` row is written after the business write commits. A crash in between loses the event: an outbox in shape, not a transactional outbox. 2) `executeSubscriber` runs `deliverToSubscriber` and then `fireSubTopics(…, "sync")` unconditionally, so a subscriber whose delivery FAILED still fires its sync subtopics. Either may be intended; neither is written down.',
+    ask: 'Are both intended? If sync subtopics mean "after a successful delivery", should they be gated on DELIVERED?',
+    files: ['apps/web-services/src/services/pubsubService.ts:48', 'apps/web-services/src/services/subscriberExecutionService.ts:692-698'],
+  },
+  {
+    id: 'D4',
+    component: 'Docs',
+    kind: 'docs',
+    severity: 'low',
+    evidence: 'verified',
+    title: 'docs/pubsub/README.md leaves out the CREAM-PIE recipe-binding gate',
+    detail:
+      'The README\'s pipeline lists idempotency → shape → MTEL conditions → async subtopics → deliver → sync subtopics. The code has one more gate between conditions and subtopics, which its own header comment also omits: recipes bound to the subscriber or its topic (multitenancy P3) can veto a delivery, recorded as SKIPPED "CREAM-PIE recipe gate not met", failing closed on error. Pattern subscribers (`topicPattern`, e.g. `helpdesk:ticket:*:stage-changed:*`) are also missing from the doc.',
+    ask: 'Add the recipe-binding gate and `topicPattern` subscribers to the README (and to the header comment of `subscriberExecutionService.ts`)?',
+    files: ['docs/pubsub/README.md', 'apps/web-services/src/services/subscriberExecutionService.ts:615-690'],
   },
 ];

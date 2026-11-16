@@ -61,14 +61,14 @@ const eNodes: DiagramNode[] = [
     files: ['libs/prisma/src/schema/lifecycle/AuditEvent.prisma'] },
 
   { id: 'event', x: 348, y: 70, w: 268, h: 70, label: 'PubSubEvent', sub: 'topicId + JSON payload', color: 'var(--green)',
-    detail: <p>The emitted event row. A topic auto-creates if dynamic.</p>,
+    detail: <p>The emitted event row, written to Postgres first. An enqueue loop claims pending rows (<code>FOR UPDATE SKIP LOCKED</code>) and produces them to the Redpanda topic <code>pubsub-events</code>; the <code>pubsub-deliver</code> consumer hands them to the dispatcher. <code>topicId</code> points at a List item: since Nov 13 topics and subscribers are items of <code>pubsubTopic</code> / <code>pubsubSubscriber</code>. Server code emitting an unknown name creates a dynamic topic; outside callers never can.</p>,
     files: ['libs/prisma/src/schema/pubsub/PubSubEvent.prisma'] },
   { id: 'deliv', x: 348, y: 170, w: 268, h: 76, label: 'PubSubDelivery', sub: 'one row per (event, subscriber)\nunique → idempotent', color: 'var(--green)',
     detail: <p>One row per <code>(eventId, subscriberId)</code>, unique — the idempotency gate against redelivery. Status is PENDING / ENQUEUED / DELIVERED / FAILED / RETRYING / SKIPPED.</p>,
     files: ['libs/prisma/src/schema/pubsub/PubSubDelivery.prisma'] },
 
   { id: 'disp', x: 664, y: 56, w: 404, h: 56, label: 'subscriberExecutionService', sub: 'switch on subscriber type', color: 'var(--orange-l)',
-    detail: <p>The dispatcher. It reads each subscriber row and runs it by type, then records DELIVERED/FAILED on the delivery row.</p>,
+    detail: <p>The dispatcher. For each active subscriber of the topic (exact, or matching a <code>topicPattern</code>) it checks idempotency, the data shape, the delivery conditions and any bound recipes, fires subtopics, runs the subscriber by type, and records DELIVERED / FAILED / SKIPPED on the delivery row.</p>,
     files: ['apps/web-services/src/services/subscriberExecutionService.ts'] },
   { id: 'code', x: 664, y: 128, w: 196, h: 70, label: 'CODE subscriber', sub: 'runs a registered handler', color: 'var(--orange-l)',
     detail: <p>Binds a topic to a named in-process handler (e.g. <code>comms.email.deliver</code>, or the ticket-activity handlers). This is how "when a ticket changes, notify people" is wired without business code calling a provider.</p> },
@@ -125,6 +125,11 @@ export default function RequestAndEvents({ setPage }: { setPage: (p: Page) => vo
         }
       >
         <SvgDiagram width={1100} height={320} nodes={eNodes} edges={eEdges} groups={eGroups} minWidth={940} />
+        <Callout kind="tip" title="The whole pipeline, with a simulator">
+          This diagram skips the Kafka relay, data shapes, subtopic chains and the publish endpoint. Deep Dives →{' '}
+          <strong>PubSub</strong> covers each of them, with a step-by-step simulator of one delivery.{' '}
+          <button className="kit-inline-link" onClick={() => { window.location.hash = '#/deepdives/pubsub'; window.scrollTo({ top: 0 }); }}>Open the PubSub deep dive</button>.
+        </Callout>
 
         <div className="kit-table-wrap">
           <table className="kit-table">
@@ -149,7 +154,7 @@ export default function RequestAndEvents({ setPage }: { setPage: (p: Page) => vo
         <Files
           items={[
             { path: 'apps/web-services/src/services/subscriberExecutionService.ts', note: 'the dispatcher: switch on EMAIL / TEXT / API / CODE / JOB' },
-            { path: 'libs/prisma/src/utils/pubsubItems.ts', note: 'the subscriber-type set' },
+            { path: 'libs/prisma/src/utils/pubsubItems.ts', note: 'topics & subscribers as List items; the subscriber-type set' },
             { path: 'apps/web-services/src/middleware/topicBroadcast.ts', note: 'emits core:<resource>:*:{created,updated}:*' },
             { path: 'apps/web-services/src/services/stageTransitionService.ts', note: 'emits <domain>:<resource>:stage-changed after commit' },
           ]}

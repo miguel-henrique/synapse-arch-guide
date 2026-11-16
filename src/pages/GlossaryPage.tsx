@@ -172,6 +172,59 @@ const TERMS: Term[] = [
     color: 'var(--text-dim)',
     def: 'The term used to describe what CREAM-PIE + MTEL create: a proprietary language tailored to CI Connect\'s ERP domain. CREAM-PQL is the internal representation; MTEL and JSON are input dialects.',
   },
+  {
+    term: 'Module (PlatformModule)',
+    category: 'Modules',
+    color: 'var(--orange-l)',
+    def: 'A business capability declared in modules/<slug>/module.json and seeded into a PlatformModule registry row whose navRoots are the menu subjects it unlocks. optional: false means core (always on); defaultEnabled is the fallback when nothing else decides. This is the real version of the "declarative ERP module" (erp.crm.json) Chris presented.',
+    example: 'crm, operations, billing, infrastructure: 11 modules on stage',
+  },
+  {
+    term: 'Availability',
+    category: 'Modules',
+    color: 'var(--orange-l)',
+    def: 'Whether a tenant has a module at all, decided BEFORE access control. resolveModulesForOrg: platform switch → platformAdminOnly → role limit → the org\'s own row (or inherited from its PARENT) → the industry default → defaultEnabled. It decides what the menu offers; it never authorizes data. The server checks abilities on every request regardless.',
+    example: 'GET /synapse/v1/modules/enabled → { slug, enabled, source: "INDUSTRY", navRoots }',
+  },
+  {
+    term: 'Context machine',
+    category: 'Modules',
+    color: 'var(--orange-l)',
+    def: 'The order in which synapse-v3 learns who and where it is (ErpProvider / useErpBootstrap): user → organizations → active organization → identity & abilities, and modules → menu. Abilities must resolve after the tenant, and the menu after modules.',
+  },
+  {
+    term: 'Saved view',
+    category: 'Rendering',
+    color: 'var(--teal)',
+    def: 'The user tier of a CREAM-PIE recipe: an item of the savedView List made with "Save view" on any list or board. Shared with "Just me" or "Everyone at my company" (shareScope). A view saved on a board keeps the board\'s recipe as baseRecipe and is listed under that board.',
+    example: 'POST /synapse/v1/saved-views → ?recipe=my-hvac-customers',
+  },
+  {
+    term: 'Topic',
+    category: 'PubSub',
+    color: 'var(--pink)',
+    def: 'A named event channel, stored as an item of the pubsubTopic List (since Nov 13). Named event-shaped, domain:resource:action, and permanent. Registered topics (isDynamic: false) can declare a payload shape, auth and synchronous execution. Dynamic topics are auto-created when server code emits, or a subscriber subscribes to, an unknown name. Outside callers can never create one.',
+    example: 'helpdesk:ticket:42:stage-changed:resolved, comms:email:requested',
+  },
+  {
+    term: 'Subscriber',
+    category: 'PubSub',
+    color: 'var(--pink)',
+    def: 'What reacts to a topic: an item of the pubsubSubscriber List bound to one topic (parentItemId) or a topicPattern. Its type decides delivery: EMAIL, TEXT, API (webhook), CODE (a registered handler) or JOB. It holds recipients, templates, delivery conditions (CREAM-PQL) and subtopics, so none of them live in code.',
+  },
+  {
+    term: 'Data shape',
+    category: 'PubSub',
+    color: 'var(--pink)',
+    def: 'The flat field list a topic\'s payload promises (or a subscriber requires): [{ path, label, type, required }]. A payload missing a required field is recorded as a SKIPPED delivery. Merge tags are offered from it as {{ event.path }}.',
+  },
+  {
+    term: 'Subtopic / topic chain',
+    category: 'PubSub',
+    color: 'var(--pink)',
+    def: 'A follow-up topic a subscriber publishes when it fires (config.subTopics[]): async (before delivery, fire-and-forget) or sync (after delivery, awaited, with delayMs), with a payloadFilter and conditions. Every chained payload carries _chain; a topic may appear at most 5 times in one chain.',
+    example: 'form-submitted → lead-scored → crm-sync',
+  },
 ];
 
 const CATEGORIES = ['All', ...new Set(TERMS.map(t => t.category))];

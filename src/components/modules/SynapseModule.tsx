@@ -37,7 +37,7 @@ const nodes: DiagramNode[] = [
     detail: <p>Items of the <code>creamPieRecipe</code> list. The board recipe plus seven <code>operations.synapse.chart.*</code> recipes — but only where the seed has run (see the callout at the end).</p>,
     color: 'var(--green)' },
   { id: 'navrows', x: 302, y: 276, w: 230, h: 70, label: 'Navigation item', sub: 'operations.synapse (CreamPie)\nparent: operations · position 160',
-    detail: <p>The menu node. It is a <strong>CreamPie</strong> node: it points at the recipe and the screen is reached at <code>/backoffice/operations/synapse</code>. Its node kind is why no saved-views accordion appears under it in the sidebar — see the Saved views section.</p>,
+    detail: <p>The menu node. It is a <strong>CreamPie</strong> node: it points at the recipe and the screen is reached at <code>/backoffice/operations/synapse</code>. Since Nov 9 the sidebar lists, under it, only the views saved on this board (their <code>baseRecipe</code> is its recipe). See the Saved views section.</p>,
     color: 'var(--green)' },
   { id: 'todos', x: 302, y: 366, w: 230, h: 88, label: 'todos table', sub: 'a ticket = typeSlug "ticket"\nqueueSlug "synapse"\nsubtask = parent_todo_id child',
     detail: <p>One table for every unit of work. A ticket is a row whose <code>type_slug</code> is <code>ticket</code>; a subtask is a row of type <code>helpdesk_task</code> whose <code>parent_todo_id</code> points at the ticket. (See How it fits → Todos &amp; Projects.)</p>,
@@ -398,63 +398,52 @@ export default function SynapseModule() {
 
       <Section
         label="Saved views"
-        title="Why saved views show under Leads but not under Synapse"
+        title="Saved views on the Synapse board (changed Nov 9–11)"
         intro={
           <p>
-            A <strong>saved view</strong> is a personal filtered view you save from a board. It is the <em>user tier</em>
+            A <strong>saved view</strong> is a personal filtered view you save from a list or board. It is the <em>user tier</em>
             {' '}of a recipe: an item of the <code>savedView</code> List (the system and org tiers live in{' '}
             <code>creamPieRecipe</code>). You create one with <code>POST /synapse/v1/saved-views</code>, handled by
-            cream-pie's <code>savedView.controller.ts</code>; it is ownership-gated, not admin-gated.
+            cream-pie's <code>savedView.controller.ts</code>; it is ownership-gated, not admin-gated. Try it:
+            Tutorials → <em>Make your own CREAM-PIE recipe</em>.
           </p>
         }
       >
+        <Callout kind="real" title="Updated: views saved on the board now show under it">
+          Until Nov 9 the sidebar attached no saved views to the Synapse board, because it is a <strong>CreamPie</strong>{' '}
+          node and the perspectives accordion only grew under <strong>Item</strong> nodes with a{' '}
+          <code>primaryResource</code>. Three stage commits changed that:
+          <ul>
+            <li><code>e16a3cf441</code> (cream-pie): a view saved on a recipe page stores that page's recipe as{' '}
+              <code>metadata.baseRecipe</code>. Applying the view ANDs the base recipe (resolved from the shared tiers only)
+              under the view's own conditions, so the view keeps the board's rows. A base that no longer resolves answers 404
+              instead of silently widening.</li>
+            <li><code>a4200f0d12</code> (synapse): saving on a board sends the board's recipe, and a recipe page in the sidebar
+              lists <strong>only the views saved on it</strong>. Resource pages (Leads, Support Tickets) list their recipes and
+              views as before, minus views that belong to a recipe page.</li>
+            <li><code>90d3460611</code> (#1531): each saved view gets <em>Move up / Move down</em>. The order is yours, kept in your
+              preferences per menu entry.</li>
+          </ul>
+        </Callout>
         <div className="kit-prose">
           <p>
-            Here is the quirk worth understanding. On the Leads screen the sidebar lists your saved views indented
-            under "Leads". On the Synapse board it does not — and that is down to the <strong>node kind</strong>, not a
-            missing feature:
-          </p>
-          <ul>
-            <li>
-              The sidebar only grows a perspectives/saved-views accordion under a node whose{' '}
-              <code>navigationType === 'item'</code> that carries a <code>primaryResource</code>. That test is in{' '}
-              <code>UnifiedSidebar.tsx</code> (<code>nodeToItem</code>): <code>resource</code> is set only for Item
-              nodes.
-            </li>
-            <li>
-              <code>sales.leads</code> is an <strong>Item</strong> with <code>primaryResource: "leads"</code>, so the
-              accordion (system + org recipes <em>and your saved views</em>) renders under it.
-            </li>
-            <li>
-              <code>operations.synapse</code> is a <strong>CreamPie</strong> node (it points at a recipe). Even though it
-              carries <code>primaryResource: "todos"</code>, <code>nodeToItem</code> drops the resource because the type
-              is not <code>item</code>, so nothing attaches the accordion. It is excluded on purpose: every Operations
-              department is a CreamPie over <code>todos</code>, so attaching the accordion would show the same list of
-              all todo perspectives under each of them.
-            </li>
-          </ul>
-          <p>
-            <strong>So what is missing?</strong> Nothing attaches saved views to a CreamPie node. To show them under the
-            Synapse board you would either teach <code>nodeToItem</code> to attach a resource for CreamPie nodes too
-            (which re-introduces the duplication the exclusion prevents) or make the manifest node an Item with a
-            <code>primaryResource</code> (which changes how it routes). The contrast already exists in the same
-            workspace: <code>operations.support</code> ("Support Tickets") <em>is</em> an Item over <code>todos</code>,
-            so it does get the accordion.
+            Why "only the views saved on it": every Operations department is a CreamPie over <code>todos</code>. Listing every todo
+            perspective under each one drew every department's boards under every department. Keying a view to its{' '}
+            <code>baseRecipe</code> gives each board exactly its own views.
           </p>
           <p>
-            One nuance: the board <em>page</em> still reads perspectives. <code>EntityList</code> calls{' '}
-            <code>usePerspectives('todos')</code>, which returns all three tiers including your saved views, so you can
-            still save and pick a view from the board's chip row. Only the <em>sidebar</em> omits them for a CreamPie
-            node.
+            The dialog also gained <strong>Who can see this view</strong>: <em>Just me</em> or <em>Everyone at my company</em>{' '}
+            (<code>shareScope: "private" | "organization"</code>). A shared view is still a view, not a permission: each
+            reader's abilities and tenant scope still apply, and a recipe administrator of that organization may edit or
+            remove it.
           </p>
         </div>
         <Files
           items={[
-            { path: 'libs/prisma/src/utils/creamPieRecipes.ts:34, :123', note: 'the savedView List (user tier) and its items' },
-            { path: 'apps/web-services/src/modules/cream-pie/savedView.controller.ts', note: 'postSavedView (POST /synapse/v1/saved-views)' },
-            { path: 'apps/web-services/src/modules/synapse/synapse.routes.ts:157-160', note: 'the saved-views route mount' },
-            { path: 'apps/synapse-v3/src/components/dashboard/UnifiedSidebar.tsx', note: 'nodeToItem: resource attached only for navigationType === item' },
-            { path: 'apps/synapse-v3/src/components/entity-list/usePerspectives.ts', note: 'the board page still reads all three tiers' },
+            { path: 'apps/synapse-v3/src/components/dashboard/navPerspectives.ts', note: 'perspectivesForNode: what a node lists beneath it' },
+            { path: 'apps/synapse-v3/src/components/dashboard/UnifiedSidebar.tsx:160-176', note: 'recipe pages get an accordion keyed by baseRecipe' },
+            { path: 'apps/web-services/src/modules/cream-pie/savedViewService.ts', note: 'baseRecipe check on save; shareScope' },
+            { path: 'apps/web-services/src/modules/cream-pie/viewFilter.ts', note: 'applying a view ANDs its base recipe' },
           ]}
         />
       </Section>

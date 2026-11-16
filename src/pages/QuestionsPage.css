@@ -25,3 +25,5 @@
 .q-files { list-style: none; display: flex; flex-wrap: wrap; gap: 0.35rem; margin-top: 0.7rem; }
 .q-files code { font-size: 0.74rem; color: var(--teal-l); }
 .q-empty { color: var(--text-dim); }
+.q-resolved { border: 1px solid var(--green); background: rgba(58,255,140,0.06); border-radius: 8px; padding: 0.6rem 0.8rem; margin-bottom: 0.8rem; font-size: 0.9rem; }
+.q-resolved > strong { color: var(--green); }

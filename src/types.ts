@@ -3,6 +3,7 @@
 export type Page =
   | 'home'
   | 'howitfits'
+  | 'erp'
   | 'deepdives'
   | 'modules'
   | 'showcase'
@@ -15,6 +16,7 @@ export type Page =
 export const PAGES: { page: Page; label: string }[] = [
   { page: 'home', label: 'Architecture' },
   { page: 'howitfits', label: 'How it fits' },
+  { page: 'erp', label: 'ERP Manifest' },
   { page: 'deepdives', label: 'Deep Dives' },
   { page: 'modules', label: 'Modules' },
   { page: 'showcase', label: 'Showcase' },

@@ -103,6 +103,15 @@ const SCORE: { rule: string; leads: string; infra: string; note: string }[] = [
 export default function InfraModule() {
   return (
     <>
+      <Callout kind="real" title="Update (Nov 2026): stage has moved past this page">
+        <p>
+          Commit <code>63b9f05007</code> (Oct 27) moved the Infrastructure menu into a module manifest,{' '}
+          <code>modules/infrastructure/module.json</code>, so its nodes now pass the same module gate and <code>canRead</code>{' '}
+          filter as every other workspace. On Nov 3 (<code>517549e9f1</code>) the Backups screens became recipes and a target
+          detail, and <code>pages/Infrastructure.tsx</code> was deleted. The as-is diagram and scorecard below describe the
+          state before those changes. They are kept as the worked example of what "outside the architecture" looked like.
+        </p>
+      </Callout>
       <Section
         label="Case study · under construction"
         title="Infrastructure — does it follow the List architecture?"

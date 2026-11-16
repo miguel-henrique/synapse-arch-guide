@@ -57,6 +57,8 @@
 .kit-prose p + p { margin-top: 0.7rem; }
 .kit-prose ul, .kit-prose ol { padding-left: 1.3rem; margin: 0.6rem 0; }
 .kit-prose li + li { margin-top: 0.3rem; }
+ul.kit-prose, ol.kit-prose { padding-left: 1.3rem; margin: 0.6rem 0; }
+ul.kit-prose li + li, ol.kit-prose li + li { margin-top: 0.35rem; }
 
 /* ── callouts ── */
 .kit-callout {

@@ -6,7 +6,7 @@ export type Verdict = 'ui' | 'manifest' | 'code' | 'mixed' | 'decide';
 
 export interface Tutorial {
   id: string;
-  group: 'Leads' | 'Infrastructure' | 'Everyday';
+  group: 'Getting started' | 'Leads' | 'Infrastructure' | 'Everyday';
   title: string;
   verdict: Verdict;
   goal: string;
@@ -26,6 +26,63 @@ export const VERDICT: Record<Verdict, { label: string; color: string }> = {
 };
 
 export const TUTORIALS: Tutorial[] = [
+  // ─────────────────────────────────────────────────────── GETTING STARTED
+  {
+    // Chris, daily Nov 16 2026: "everyone should make their own cream pie …
+    // build a recipe. It's as easy as pointing and clicking and saving a view."
+    id: 'my-first-recipe',
+    group: 'Getting started',
+    title: 'Make your own CREAM-PIE recipe (a saved view)',
+    verdict: 'ui',
+    goal: 'Feel the architecture from the user\'s side: turn a filtered list into a named recipe, then see that it is the same object the manifests declare.',
+    triage:
+      'A "list of customers" is not a screen, a menu item or a table. There is only `organizations`, and **Customers** is a *point of view* on it. A point of view is a **recipe**: a named CREAM-PQL condition stored as a row (doctrine §4). Three tiers share one shape: **system** recipes from `module.json` and **org** recipes (list `creamPieRecipe`), and **your** saved views (list `savedView`). Saving a view writes a user-tier recipe. No code, no deploy.',
+    steps: [
+      {
+        where: 'ui',
+        title: 'Open a list and narrow it',
+        body: 'Go to **Finance → Organizations** (`/backoffice/finance/organizations`). Apply a couple of filters (for example *Status* = Customer, or an industry), type a search term if you like, and pick the columns and sort you want. Watch the address bar change: `when[…]`, `lists[…]`, `sort=`. The URL is the state (doctrine §6).',
+      },
+      {
+        where: 'ui',
+        title: 'Click “Save view”',
+        body: 'The **Save this view** dialog is the shared recipe builder, pre-filled from what you did:\n\n- **Name** (e.g. *My HVAC customers*) and an optional **Description**.\n- The **conditions**: each filter became a rule, and a search term became an `OR` group over the searchable fields.\n- **Advanced (JSON)**: open it. That is raw **CREAM-PQL**, the same `{ "logic": "AND", "rules": [ … ] }` you see in `module.json → recipes[]`.\n- **Who can see this view**: *Just me* or *Everyone at my company*. Shared views still respect each person\'s permissions.\n\nSave.',
+      },
+      {
+        where: 'verify',
+        title: 'Find it where a recipe appears',
+        body: 'It shows **indented under Organizations in the sidebar** (a perspective, not a new menu node: doctrine §5), with *Move up / Move down* to order your views. Opening it puts `?recipe=<slug>` in the URL. The slug is made from your name (`my-hvac-customers`), unique among *your* views.',
+      },
+      {
+        where: 'verify',
+        title: 'Watch it travel (DevTools → Network)',
+        body: '1. Saving sent `POST /synapse/v1/saved-views` with `{ name, resource, conditions, shareScope, presentation }`. The server stored an item of the `savedView` List, owned by you.\n2. Opening it sends `GET /api/v1/organizations?recipe=<slug>&…`. On the server, `viewFilter` resolves the slug across tiers (**platform → organization → you**), checks `availableWhen`, and **ANDs** the conditions under your tenant scope. A recipe narrows, it never widens what you may see.',
+      },
+      {
+        where: 'code',
+        title: 'Compare with a system recipe',
+        body: 'Open `modules/crm/module.json` and find the recipe Chris\'s example maps to:\n\n```json\n{\n  "slug": "crm.organizations.customers",\n  "displayName": "Customers",\n  "primaryResource": "organizations",\n  "conditions": { "logic": "AND", "rules": [\n    { "field": "lists.customerStatus", "op": "in", "value": ["customer", "at_risk"] }\n  ] }\n}\n```\n\nSame shape as your saved view: a slug, a resource, CREAM-PQL conditions. The only difference is the tier: this one ships with the module and every tenant gets it, and yours belongs to you. That is the sense in which a recipe is "a smaller part of the larger JSON object".',
+      },
+      {
+        where: 'ui',
+        title: 'Bonus: save one on a ticket board',
+        body: 'Do the same on a department board under **Operations** (e.g. the Synapse board, filtered to your tickets). Since Nov 9 a view saved on a board keeps the board\'s own recipe as `baseRecipe`: your conditions are ANDed *under* the board\'s, and the view is listed **under that board** in the menu.',
+      },
+    ],
+    pitfalls: [
+      'A saved view is not a permission. Sharing it with your company does not let anyone see rows their abilities do not allow.',
+      'Need it for everyone, on every tenant? That is a system recipe in the module manifest (see "Add a shared perspective"), not a shared saved view.',
+      'Do not ask for a new menu item for a filtered list. Menu = places; recipes = perspectives on a place.',
+    ],
+    files: [
+      { path: 'apps/synapse-v3/src/components/entity-list/SaveViewDialog.tsx', note: 'pre-fills the recipe builder from your filters' },
+      { path: 'apps/synapse-v3/src/components/recipe-builder/RecipeEditorDialog.tsx', note: 'Name, conditions, Advanced (JSON), Who can see this view' },
+      { path: 'apps/web-services/src/modules/cream-pie/savedView.controller.ts', note: '/synapse/v1/saved-views (ownership-gated)' },
+      { path: 'apps/web-services/src/modules/cream-pie/savedViewService.ts', note: 'slug, share scope, baseRecipe, tier resolution' },
+      { path: 'apps/web-services/src/modules/cream-pie/viewFilter.ts', note: '?recipe= → AND under your scope' },
+      { path: 'modules/crm/module.json', note: 'recipes[]: the system tier' },
+    ],
+  },
   // ───────────────────────────────────────────────────────────────── LEADS
   {
     id: 'relabel-stage',
@@ -182,6 +239,7 @@ export const TUTORIALS: Tutorial[] = [
     ],
     pitfalls: [
       'OR / nested logic cannot travel in `when[…]` (flat AND only) — that is precisely when you need a recipe.',
+      'Check `recipes[]` before adding one: on Nov 13 the CRM manifest gained `sales.new-not-contacted`, `sales.overdue`, `sales.unassigned` and `sales.hot` ("Hot" = tags 911 or Big Fish), commit `7f519eacde`.',
       'Copying `organizationId eq 496` into one more recipe adds to the hardcoded-tenant debt (see Questions). Prefer the view\'s `fixedWhen` until there is a context binding.',
     ],
   },
