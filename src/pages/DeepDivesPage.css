@@ -159,3 +159,21 @@
 .ps-code { font-size: 0.76rem; color: var(--green); white-space: pre; overflow-x: auto; background: var(--bg3); border: 1px solid var(--border); border-radius: 8px; padding: 0.75rem 0.9rem; margin: 0.5rem 0 1rem; }
 .ps-loop__btns { display: flex; gap: 0.5rem; flex-wrap: wrap; margin: 0.5rem 0; }
 .ps-loop__json { font-size: 0.76rem; color: var(--teal-l); white-space: pre-wrap; word-break: break-all; background: var(--bg3); border: 1px solid var(--border); border-radius: 8px; padding: 0.75rem 0.9rem; margin-bottom: 0.75rem; }
+
+/* ── Signup → payment walkthrough ── */
+.su-walk { display: grid; gap: 0.75rem; margin: 0.5rem 0 1rem; }
+.su-walk__rail { list-style: none; display: flex; flex-wrap: wrap; gap: 0.4rem; }
+.su-walk__dot { background: var(--surface); border: 1px solid var(--border2); border-left: 3px solid var(--tone); color: var(--text-dim); border-radius: 8px; padding: 0.4rem 0.7rem; font: inherit; font-size: 0.8rem; cursor: pointer; }
+.su-walk__dot:hover { color: var(--text); }
+.su-walk__dot--on { color: var(--text); background: color-mix(in srgb, var(--tone) 14%, var(--surface)); border-color: var(--tone); }
+.su-walk__card { background: var(--surface); border: 1px solid var(--border); border-top: 3px solid var(--tone); border-radius: var(--radius-sm); padding: 1rem; display: grid; gap: 0.6rem; }
+.su-walk__row { display: grid; grid-template-columns: 110px 1fr; gap: 0.75rem; font-size: 0.9rem; line-height: 1.6; }
+.su-walk__row > span { font-size: 0.72rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-dim); padding-top: 0.2rem; }
+@media (max-width: 640px) { .su-walk__row { grid-template-columns: 1fr; gap: 0.2rem; } }
+.su-walk__records { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 0.5rem; margin-top: 0.25rem; }
+.su-rec { background: var(--bg3); border: 1px solid var(--border2); border-radius: 8px; padding: 0.5rem 0.65rem; font-size: 0.82rem; display: grid; gap: 0.15rem; color: var(--text); }
+.su-rec b { font-size: 0.72rem; color: var(--green); letter-spacing: 0.04em; }
+.su-rec--bad { border-color: var(--pink); }
+.su-rec--bad b { color: var(--pink); }
+.su-rec--none { opacity: 0.55; }
+.su-walk__nav { display: flex; gap: 0.5rem; justify-content: flex-end; }
