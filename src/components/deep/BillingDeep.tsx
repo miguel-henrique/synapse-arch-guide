@@ -119,7 +119,7 @@ export default function BillingDeep() {
               <Row t="Sep 28" what="Last Zoho invoice with the $250 Licensing Fee (hosting)." proof={<>historical <code>Invoice</code></>} />
               <Row t="Oct 21 15:55" what="Deck session created. Three hours later a change ships: a new cart starts with no website package picked (websitePending)." proof={<>session <code>createdAt</code>; commit 9ad5144f56 18:47 UTC</>} />
               <Row t="Oct 27 13:44" what={<>The rep edits the proposal: $3,776 → <strong>$3,650/mo</strong>. Lines include Lean Launch build ($2,500, 100% off with FREESITE) and <strong>Monthly maintenance $250/mo</strong> (WEBSITE_HOSTING). Still a proposal: <strong>not signed, not charged</strong>.</>} proof={<><code>audit_events</code> update on the contract; the lines inside the org snapshot in the session's <code>formData</code></>} />
-              <Row t="Oct 27 13:55" what={<>A PDF of that proposal is drawn: "AG-09304945", $3,650/mo. <strong>This is the PDF the rep has.</strong></>} proof={<>the AG number is the last 8 digits of the clock when the PDF is drawn: 09304945 → 13:55:04.945</>} />
+              <Row t="Oct 27 13:55" what={<>A PDF of that version is drawn <strong>with the customer's drawn signature</strong>: "AG-09304945", $3,650/mo. <strong>This is the PDF the rep has.</strong> Synapse records no signing that day: the contract stays a proposal, no PDF is stored, nothing is charged.</>} proof={<>the AG number is the last 8 digits of the clock when the PDF is drawn: 09304945 → 13:55:04.945. A signature image is drawn only when the deck holds one (<code>generateAgreement.ts:2743</code>).</>} />
               <Row t="Oct 28 02:03" what={<>A fix for half-saved sessions ships: any field missing from a stored cart is filled with the <em>new-session default</em>. For an older cart, a missing <code>websitePending</code> becomes <code>true</code> = "no website picked".</>} proof={<>commit e706990ffd, <code>get-started-state-shape.ts</code></>} />
               <Row t="Oct 28 – Nov 3" what="The deck is opened several times. On load the repaired cart is written back; the pricing engine now leaves out both website lines." proof={<>"current step" updates on the session in <code>audit_events</code></>} />
               <Row t="Nov 3 19:01:16.477" what={<>The final save: contract $3,650 → <strong>$3,400</strong>. 140 ms later the customer signs (drawn signature).</>} proof={<><code>audit_events</code>: update, then transition proposal → signed</>} />
@@ -145,11 +145,12 @@ export default function BillingDeep() {
           { path: 'libs/get-started-pricing/src/lib/pricing.ts:1935', note: 'maintenance = websiteSkipped ? 0 : tier.maintenance' },
           { path: 'libs/agreement-pdf/src/lib/generateAgreement.ts:889', note: 'AG number = Date.now() last 8 digits; the date is "today" (:2826). Neither is stored.' },
         ]} />
-        <Callout kind="real" title="Which document governs?">
-          The only signed document is the Nov 3 one, at $3,400. The $3,650 PDF is the Oct 27 proposal, drawn when no signature
-          had been recorded and nothing had been charged. Its "Authorised Signature" block and date are printed on every
-          rendering, signed or not. So adding $250 needs the customer's signature on a new version. It is not a correction
-          to something they already signed.
+        <Callout kind="real" title="Two signatures, one on record">
+          The customer drew a signature twice: on Oct 27 on the $3,650 version (the rep's PDF), and on Nov 3 on the $3,400
+          version. Only the second is recorded in Synapse and charged. So the customer did agree to the hosting, but the
+          record they last signed does not have it. Adding it back is done with a new version the customer signs. Why the
+          Oct 27 signature was not recorded is not confirmed yet (most likely the signing is recorded only when checkout
+          completes).
         </Callout>
       </Section>
 
