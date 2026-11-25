@@ -8,6 +8,7 @@ import TransformDeep from '../components/deep/TransformDeep';
 import SchemaB from '../components/deep/SchemaB';
 import PubSubDeep from '../components/deep/PubSubDeep';
 import SignupDeep from '../components/deep/SignupDeep';
+import BillingDeep from '../components/deep/BillingDeep';
 import type { Page } from '../types';
 import './DeepDivesPage.css';
 
@@ -20,6 +21,7 @@ const TABS = [
   { id: 'schemab', label: 'Lists all the way down', icon: '🧬' },
   { id: 'pubsub', label: 'PubSub', icon: '📣' },
   { id: 'signup', label: 'Signup → payment', icon: '🧾' },
+  { id: 'billing', label: 'Deck billing', icon: '💳' },
 ];
 
 export default function DeepDivesPage({ setPage }: { setPage: (p: Page) => void }) {
@@ -60,6 +62,7 @@ export default function DeepDivesPage({ setPage }: { setPage: (p: Page) => void 
       {tab === 'schemab' && <SchemaB />}
       {tab === 'pubsub' && <PubSubDeep />}
       {tab === 'signup' && <SignupDeep />}
+      {tab === 'billing' && <BillingDeep />}
     </div>
   );
 }

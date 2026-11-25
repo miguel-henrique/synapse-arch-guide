@@ -177,3 +177,7 @@
 .su-rec--bad b { color: var(--pink); }
 .su-rec--none { opacity: 0.55; }
 .su-walk__nav { display: flex; gap: 0.5rem; justify-content: flex-end; }
+
+/* Billing deep dive */
+.kit-h3 { margin: 20px 0 8px; font-size: 1rem; }
+.kit-code { background: var(--bg2, rgba(127,127,127,.08)); border-radius: 8px; padding: 12px 14px; overflow-x: auto; font-size: .8rem; line-height: 1.5; white-space: pre; }
