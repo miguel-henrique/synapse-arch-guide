@@ -221,7 +221,7 @@ select at, action, diff from audit_events
             <tbody>
               <tr><td>1</td><td>The session repair reads a missing <code>websitePending</code> as <code>false</code> when the stored cart has a tier, like the draft loader and the deck strategy already do.</td><td>Stops the website lines from vanishing for sessions created before Oct 21. <strong>Root fix.</strong></td></tr>
               <tr><td>2</td><td>When a save would remove a line from a contract that already had it (especially recurring or WEBSITE_HOSTING), record it on the contract and show the rep before signing.</td><td>Today a line can disappear in total silence.</td></tr>
-              <tr><td>3</td><td>Give the PDF a stable agreement number (the contract's), and print "Proposal, not signed" when there is no signature.</td><td>A $3,650 "AG-…" PDF with a signature block and date looks signed when it was not.</td></tr>
+              <tr><td>3</td><td>Give the PDF a stable agreement number (the contract's), and print "Proposal, not signed" when there is no signature.</td><td>A signed $3,650 "AG-…" PDF exists that Synapse has no record of, so nobody can find or check it.</td></tr>
             </tbody>
           </table>
         </div>
